@@ -3,6 +3,7 @@ from utils.request import Request
 from utils.bookings import Booking
 from utils import exceptions
 from utils.config import ConfigManager
+from utils.sheets import SheetManager
 
 from discord.ext import commands
 import discord
@@ -21,6 +22,7 @@ class PvpSignups(commands.Bot):
         intents = discord.Intents.default()
         super().__init__(command_prefix=self.config['command_prefix'], intents=intents)
         self.request = Request(self)
+        self.sheets = SheetManager(self)
         self.startup()
 
     async def on_ready(self):

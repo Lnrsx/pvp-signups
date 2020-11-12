@@ -3,7 +3,6 @@ from string import capwords
 from utils.pricing import set_rating_price, one_win_price, hourly_price
 from utils.response_types import react_message, react
 from utils.utils import base_embed, get_logger
-from utils import sheets
 from utils.dictionaries import spec_emotes
 from utils import exceptions
 
@@ -221,7 +220,7 @@ class Booking(object):
 
         if self.status == 2:
             await self.get_gold_realms()
-            await sheets.add_pending_booking([
+            await self.client.sheets.add_pending_booking([
                 'pending', self.id, self.gold_realms, self.booster, self.boost_cut,
                 self.booster_2, self.boost_cut_2, str(self.author.id), str(self.ad_cut),
                 str(self.price), str(self.author), 'Pending booking completion'])
@@ -231,7 +230,7 @@ class Booking(object):
     async def update_sheet(self) -> bool:
 
         """Finds the booking instance by ID and updates the fields to the current instance attributes"""
-        sheet_booking = await sheets.get_pending_booking(self)
+        sheet_booking = await self.client.sheets.get_pending_booking()
         fields = [
             statuses[self.status], self.id, self.gold_realms, self.booster, self.boost_cut,
             self.booster_2, self.boost_cut_2, str(self.author.id), str(self.ad_cut),
@@ -240,7 +239,7 @@ class Booking(object):
         for i, item in enumerate(fields):
             sheet_booking[i].value = item
 
-        await sheets.update_booking(sheet_booking)
+        await self.client.sheets.update_booking(sheet_booking)
 
     async def cancel(self):
 
@@ -280,14 +279,14 @@ class Booking(object):
          to be stored in the interal booking cache"""
 
         if self.status == 3:
-            sheet_booking = await sheets.get_pending_booking(self)
+            sheet_booking = await self.client.sheets.get_pending_booking(self)
             if not isinstance(sheet_booking, Exception):
                 attachment_true = await self.get_attachment_link()
                 if attachment_true:
                     self.status = 6
                     sheet_booking[0].value = statuses[self.status]
                     sheet_booking[11].value = self.attachment
-                    await sheets.update_booking(sheet_booking)
+                    await self.client.sheets.update_booking(sheet_booking)
                     await self._status_update()
                     self.delete()
 
