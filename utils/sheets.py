@@ -44,6 +44,7 @@ class SheetManager(object):
             assert booking_row[7].value in str(booking.author) or booking_override_users, "Insufficient permissions"
             return booking_row
         except CellNotFound:
+            logger.error("SheetManager failed to find a booking that should be there")
             raise exceptions.RequestFailed("Spreadsheet data is corrupted, please contact management")
 
     async def update_booking(self, booking_cells):
