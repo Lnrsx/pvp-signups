@@ -83,7 +83,12 @@ class Booking(object):
         :returns: discord.User"""
 
         if isinstance(self._author, int):
-            self._author = commands.Bot.get_user(self.client, self._author)
+            author = commands.Bot.get_user(self.client, self._author)
+            if not author:
+                author = commands.Bot.fetch_user(self.client, self._author)
+                if not author:
+                    raise exceptions.RequestFailed("The booking author cannot be found from ID, please contact management")
+            self._author = author
         return self._author
 
     @property
@@ -228,7 +233,7 @@ class Booking(object):
     async def update_sheet(self) -> bool:
 
         """Finds the booking instance by ID and updates the fields to the current instance attributes"""
-        sheet_booking = await self.client.sheets.get_pending_booking()
+        sheet_booking = await self.client.sheets.get_pending_booking(self)
         fields = [
             statuses[self.status], self.id, self.gold_realms, self.booster, self.boost_cut,
             self.booster_2, self.boost_cut_2, str(self.author.id), str(self.ad_cut),
@@ -276,20 +281,15 @@ class Booking(object):
         """Flags a booking as completed, once this happens it is no longer required
          to be stored in the interal booking cache"""
 
-        if self.status == 3:
-            sheet_booking = await self.client.sheets.get_pending_booking(self)
-            if not isinstance(sheet_booking, Exception):
-                attachment_true = await self.get_attachment_link()
-                if attachment_true:
-                    self.status = 6
-                    sheet_booking[0].value = statuses[self.status]
-                    sheet_booking[11].value = self.attachment
-                    await self.client.sheets.update_booking(sheet_booking)
-                    await self._status_update()
-                    self.delete()
-
-            else:
-                raise sheet_booking
+        try:
+            assert self.status == 3, "Booking status must be pending to complete"
+            assert await self.get_attachment_link(), "Request timed out"
+            self.status = 6
+            await self._status_update()
+            await self.update_sheet()
+            self.delete()
+        except AssertionError as e:
+            raise exceptions.RequestFailed(str(e))
 
     def cache(self):
 
@@ -554,7 +554,7 @@ class Booking(object):
 
         await self.author.send(embed=base_embed(
             "Please upload a **screenshot of payment being send to the bank character**,\n"
-            "request will timeout in 15 minutes"))
+            "request will timeout in 5 minutes"))
         try:
             attachment_message = await commands.Bot.wait_for(self.client, event='message', check=attachment_check, timeout=300)
             self.attachment = attachment_message.attachments[0].url
@@ -579,7 +579,5 @@ class Booking(object):
             return message.post_channel.id == self.author.dm_channel.id and message.author == self.author
         return message_check
 
-    def _auth_check_wrapper(self) -> bool:
-        def auth_check(user_id):
-            return user_id in self.authorid or self.client.config["managers"]
-        return auth_check
+    def authorized(self, user_id):
+        return self.authorid == user_id

@@ -1,6 +1,5 @@
 import gspread_asyncio
 from oauth2client.service_account import ServiceAccountCredentials
-from utils.dictionaries import booking_override_users
 from gspread.exceptions import CellNotFound
 from utils.utils import get_logger
 from utils import exceptions
@@ -41,7 +40,6 @@ class SheetManager(object):
             booking_cell = await sheet1.find(booking.id)
             booking_row = await sheet1.range(f"A{booking_cell.row}:L{booking_cell.row}")
             assert booking_row[0].value == 'pending', "Booking has already been completed"
-            assert booking_row[7].value in str(booking.author) or booking_override_users, "Insufficient permissions"
             return booking_row
         except CellNotFound:
             logger.error("SheetManager failed to find a booking that should be there")

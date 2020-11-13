@@ -1,6 +1,5 @@
 from discord.ext import commands
 from utils.bookings import Booking
-from utils.utils import base_embed
 from utils import exceptions
 
 
@@ -33,32 +32,36 @@ class Bookings(commands.Cog):
 
     @commands.command(description="Marks a booking as complete")
     async def done(self, ctx, booking_id):
-        booking = Booking.get(booking_id)
-        if booking:
+        try:
+            booking = Booking.get(booking_id)
+            assert booking, f"No booking found with ID ``{booking_id}``"
+            assert booking.authorized(ctx.message.author.id), "You do not have permission to do that"
             await booking.complete()
-        else:
-            await ctx.send(embed=base_embed(f"No booking was found with ID ``{booking_id}``"))
+        except AssertionError as e:
+            raise exceptions.RequestFailed(str(e))
 
     @commands.command(description="Marks a booking as partially or fully refunded")
     async def refund(self, ctx, amount, booking_id):
-        if amount.lower() not in ['full', 'partial']:
-            raise commands.BadArgument
-        booking = Booking.get(booking_id)
-        if booking:
+        try:
+            assert amount.lower() in ['full', 'partial'], "Booking refund amount must be 'full' or 'partial'"
+            booking = Booking.get(booking_id)
+            assert booking, f"No booking found with ID ``{booking_id}``"
+            assert booking.authorized(ctx.message.author.id), "You do not have permission to do that"
             await booking.refund(ctx.message.author.id, amount)
-        else:
-            await ctx.send(embed=base_embed(f"No booking found with ID ``{booking_id}``"))
+        except AssertionError as e:
+            raise exceptions.RequestFailed(str(e))
 
     @commands.command(description="Changes the registered gold realms of a booking")
     async def setgoldrealm(self, ctx, booking_id):
-        b = Booking.get(booking_id)
-        if ctx.message.author.id == b.authorid:
-            if b:
-                b.gold_realms = await b.get_gold_realms()
-                if b.status in range(3, 7):
-                    await b.update_sheet()
-        else:
-            await ctx.send(embed=base_embed("You must be the booking author to do that"))
+        try:
+            booking = Booking.get(booking_id)
+            assert booking, f"No booking found with ID ``{booking_id}``"
+            assert booking.authorized(ctx.message.author.id), "You do not have permission to do that"
+            await booking.get_gold_realms()
+            if booking.status in range(3, 7):
+                await booking.update_sheet()
+        except AssertionError as e:
+            raise exceptions.RequestFailed(str(e))
 
 
 def setup(client):
