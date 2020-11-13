@@ -46,6 +46,8 @@ class SheetManager(object):
         except CellNotFound:
             logger.error("SheetManager failed to find a booking that should be there")
             raise exceptions.RequestFailed("Spreadsheet data is corrupted, please contact management")
+        except AssertionError as e:
+            raise exceptions.RequestFailed(str(e))
 
     async def update_booking(self, booking_cells):
         sheet1 = await self.open_sheet()

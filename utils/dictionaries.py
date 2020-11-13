@@ -1,23 +1,3 @@
-factions = {
-            'Horde': '<:Horde:753970203452506132>',
-            'Alliance': '<:Alliance:753970203402174494>'
-            }
-
-class_specs = {
-    'Death Knight': ['Blood', 'Frost', 'Unholy'],
-    'Demon Hunter': ['Havoc', 'Vengeance'],
-    'Druid': ['Balance', 'Feral', 'Guardian', 'Restoration'],
-    'Hunter': ['Beast Mastery', 'Marksman', 'Survival'],
-    'Mage': ['Arcane', 'Fire', 'Frost'],
-    'Monk': ['Brewmaster', 'Mistweaver', 'Windwalker'],
-    'Paladin': ['Holy', 'Protection', 'Retribution'],
-    'Priest': ['Discipline', 'Holy', 'Shadow'],
-    'Rogue': ['Assassination', 'Outlaw', 'Subtelty'],
-    'Shaman': ['Elemental', 'Enhancement', 'Restoration'],
-    'Warlock': ['Affliction', 'Demonology', 'Destruction'],
-    'Warrior': ['Arms', 'Fury', 'Protection']
-              }
-
 class_specs_abbreviations = {
     'Death Knight': {'Uh': 'Unholy'},
     'Demon Hunter': {},
@@ -101,9 +81,6 @@ class_emotes = [
                 '<:warrior:744985921098874920>Warrior'
                 ]
 
-
-booking_override_users = ['282135704392302593', '170793631102402560']
-
 connected_realms = [
     ['Antonidas'],
     ['Archimonde'],
@@ -139,7 +116,7 @@ connected_realms = [
     ['Stormreaver'],
     ['Stormscale'],
     ['Sylvanas', 'Auchindoun', 'Dunemaul', 'Jaedenar'],
-    ['Tarrenmill', 'Dentarg', 'Tm'],
+    ['Tarrenmill', 'Dentarg'],
     ['Thrall'],
     ['Turalyon', 'Doomhammer'],
     ['Twistingnether'],

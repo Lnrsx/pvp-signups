@@ -130,13 +130,11 @@ class Booking(object):
         embed.add_field(name='Buyer Name', value=f'[{self.buyer_name}-{self.buyer_realm}](https://check-pvp.fr/eu/{self.buyer_realm}/{self.buyer_name})')
         embed.add_field(name='Boost type', value=f"``{self.type}``")
         embed.add_field(name='Booster cut', value=f"``{round(self.boost_cut):,}g``")
-        embed.add_field(name='Buyer faction', value=dictionaries.factions[self.faction] + f"``{self.faction}``")
+        embed.add_field(name='Buyer faction', value=f"{self.client.config[self.faction.lower()+'_emoji']}``{self.faction}``")
         embed.add_field(name='Boost rating', value=f"``{self.rating}``")
         embed.add_field(name='Buyer Spec', value=f'{dictionaries.spec_emotes[self.buyer_class][self.buyer_spec]}``{self.buyer_spec} {self.buyer_class}``')
         embed.add_field(name='Notes', value=f"``{self.notes}``")
-        embed.set_footer(text=f"{self.client.config['take_emoji']} to take the boost immediately"
-                              f", {self.client.config['schedule_emoji']} to schedule for later.\n"
-                              f" Winner will be picked in {self.client.config['post_wait_time']} seconds")
+        embed.set_footer(text=f"Winner will be picked in {self.client.config['post_wait_time']} seconds")
         self.post_message = await self.post_channel.send(embed=embed)
         await self.author.send(embed=base_embed(
             f'Booking has been sent! booking ID is: ``{self.id}``.\n If the booking is taken,'
@@ -333,21 +331,6 @@ class Booking(object):
             await self.author.send('Boost type not recognised, please try again.')
             await self.get_boost_type()
 
-    async def manual_class_input(self):
-        fields = '\n'.join(dictionaries.class_emotes)
-        buyer_class = await react_message(
-            self, f'the **buyers class**, accepted responses:\n {fields}\n'
-            'or react with ❌ to cancel the booking', '❌')
-        if capwords(buyer_class) in dictionaries.spec_emotes.keys():
-            self.buyer_name = capwords(self.buyer_name)
-            self.buyer_realm = capwords(self.buyer_realm)
-            self.faction = capwords(self.faction)
-            self.buyer_class = capwords(buyer_class)
-
-        else:
-            await self.author.send('Class not recognised, please try again.')
-            await self.manual_class_input()
-
     async def get_name_faction_class(self):
         buyer_name = await react_message(
             self, '**buyers character name** (e.g. Mystikdruldk)'
@@ -399,6 +382,20 @@ class Booking(object):
                 'or react with ❌ to cancel the booking')
             await self.manual_class_input()
 
+    async def manual_class_input(self):
+        fields = '\n'.join(dictionaries.class_emotes)
+        buyer_class = await react_message(
+            self, f'the **buyers class**, accepted responses:\n {fields}\n'
+            'or react with ❌ to cancel the booking', '❌')
+        if capwords(buyer_class) in dictionaries.spec_emotes.keys():
+            self.buyer_name = capwords(self.buyer_name)
+            self.buyer_realm = capwords(self.buyer_realm)
+            self.faction = capwords(self.faction)
+            self.buyer_class = capwords(buyer_class)
+        else:
+            await self.author.send('Class not recognised, please try again.')
+            await self.manual_class_input()
+
     async def get_spec(self, buyer_class):
         accepted_inputs_string = ''
         for i in spec_emotes[buyer_class].keys():
@@ -407,7 +404,7 @@ class Booking(object):
             self, f'the **buyers spec**,'
             f' accepted respones:\n {accepted_inputs_string}', '❌')
 
-        if capwords(buyer_spec) not in dictionaries.class_specs[buyer_class] and capwords(buyer_spec) not in list(dictionaries.class_specs_abbreviations[buyer_class].keys()):
+        if capwords(buyer_spec) not in dictionaries.spec_emotes[buyer_class].keys() and capwords(buyer_spec) not in list(dictionaries.class_specs_abbreviations[buyer_class].keys()):
             await self.author.send('Spec not recognised, please try again.')
             await self.get_spec(buyer_class)
 
@@ -580,5 +577,9 @@ class Booking(object):
         def message_check(message):
             # checks if the message is in the dm channel of the message author and is from the message author
             return message.post_channel.id == self.author.dm_channel.id and message.author == self.author
-
         return message_check
+
+    def _auth_check_wrapper(self) -> bool:
+        def auth_check(user_id):
+            return user_id in self.authorid or self.client.config["managers"]
+        return auth_check

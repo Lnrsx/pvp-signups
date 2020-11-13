@@ -14,7 +14,6 @@ class AdminTools(commands.Cog):
     @commands.command(description='Lists currently active bookings')
     @commands.has_permissions(administrator=True)
     async def bookings(self, ctx):
-        # TODO add pages when bookings are >10
         embed = base_embed("**Currently active bookings:**")
         for b in Booking.instances:
             booking_string = ''

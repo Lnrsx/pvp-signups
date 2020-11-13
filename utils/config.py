@@ -1,6 +1,6 @@
-from dotenv import load_dotenv
 from utils.utils import get_logger
 import json
+import os
 
 logger = get_logger("PvpSignups")
 
@@ -8,7 +8,11 @@ logger = get_logger("PvpSignups")
 class ConfigManager:
 
     def __init__(self):
-        self.settings = {**json.load(open("config.json", "r"))}
+        if os.path.isfile("config.json"):
+            self.settings = {**json.load(open("config.json", "r"))}
+        else:
+            logger.error("No config file detected")
+            exit()
 
     def set(self, key, value):
         if key in self.settings.keys():
