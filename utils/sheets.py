@@ -3,13 +3,13 @@ from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import CellNotFound
 from utils.utils import get_logger
 from utils import exceptions
+from utils.config import cfg
 
 logger = get_logger(__name__)
 
 
 class SheetManager(object):
-    def __init__(self, client):
-        self.client = client
+    def __init__(self):
         self.agcm = gspread_asyncio.AsyncioGspreadClientManager(self.get_creds, gspread_delay=0.0)
 
     @staticmethod
@@ -27,8 +27,8 @@ class SheetManager(object):
 
     async def open_sheet(self):
         agc = await self.agcm.authorize()
-        sh = await agc.open_by_key(self.client.config["google_sheet_id"])
-        return await sh.get_worksheet(self.client.config["worksheet_index"])
+        sh = await agc.open_by_key(cfg.settings["google_sheet_id"])
+        return await sh.get_worksheet(cfg.settings["worksheet_index"])
 
     async def add_pending_booking(self, booking_columns):
         sheet1 = await self.open_sheet()
@@ -50,3 +50,6 @@ class SheetManager(object):
     async def update_booking(self, booking_cells):
         sheet1 = await self.open_sheet()
         return await sheet1.update_cells(booking_cells, value_input_option='USER_ENTERED')
+
+
+sheets = SheetManager()

@@ -4,6 +4,7 @@ from time import time
 from datetime import datetime
 from utils import exceptions
 from utils.utils import get_logger
+from utils.config import cfg
 
 logger = get_logger('PvpSignups')
 
@@ -12,7 +13,7 @@ class Request(object):
     def __init__(self, client):
         self.client = client
         self.token_cache = json.load(open("data/token.json", "r"))
-        self.fields = {'wowapi': f"https://{self.client.config['wowapi_id']}:{self.client.config['wowapi_secret']}@eu.battle.net/oauth/token"}
+        self.fields = {'wowapi': f"https://{cfg.settings['wowapi_id']}:{cfg.settings['wowapi_secret']}@eu.battle.net/oauth/token"}
     
     def clearcache(self):
         self.token_cache = {}

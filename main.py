@@ -2,8 +2,7 @@ from utils.utils import get_logger, base_embed
 from utils.request import Request
 from utils.bookings import Booking
 from utils import exceptions
-from utils.config import ConfigManager
-from utils.sheets import SheetManager
+from utils.config import cfg
 
 from discord.ext import commands
 import discord
@@ -18,19 +17,16 @@ logger = get_logger('PvpSignups')
 
 class PvpSignups(commands.Bot):
     def __init__(self):
-        self.config_manager = ConfigManager()
-        self.config = self.config_manager.settings
         intents = discord.Intents.default()
-        super().__init__(command_prefix=self.config['command_prefix'], intents=intents)
+        super().__init__(command_prefix=cfg.settings['command_prefix'], intents=intents)
         self.request = Request(self)
-        self.sheets = SheetManager(self)
         self.startup()
 
     async def on_ready(self):
         try:
             await Booking.load(self)
 
-            if self.config['auto_faction_class_input']:
+            if cfg.settings['auto_faction_class_input']:
                 await self.request.token('wowapi')
             else:
                 logger.info("Automatic faction and class input is disabled")
@@ -41,13 +37,13 @@ class PvpSignups(commands.Bot):
 
         except exceptions.MessageNotFound:
             logger.warning("No valid request message was found in the request booking channel, automatically creating...")
-            request_message = await Booking.request_channel.send(f"React with {self.config['twos_emoji']} to create a 2v2 booking or {self.config['threes_emoji']} to create a 3v3 booking")
-            await request_message.add_reaction(self.config['twos_emoji'])
-            await request_message.add_reaction(self.config['threes_emoji'])
-            self.config.set("request_booking_message_id", request_message.id)
+            request_message = await Booking.request_channel.send(f"React with {cfg.settings['twos_emoji']} to create a 2v2 booking or {cfg.settings['threes_emoji']} to create a 3v3 booking")
+            await request_message.add_reaction(cfg.settings['twos_emoji'])
+            await request_message.add_reaction(cfg.settings['threes_emoji'])
+            cfg.set("request_booking_message_id", request_message.id)
             await Booking.load(self)
         except exceptions.InvalidTokenResponse:
-            self.config.set("auto_faction_class_input", False)
+            cfg.set("auto_faction_class_input", False)
             logger.warning("Bot could not get a blizzard API access token, automatic faction/class input has been disabled")
 
         logger.info("Bot is ready")
@@ -97,7 +93,7 @@ class PvpSignups(commands.Bot):
 def main():
     bot = PvpSignups()
     try:
-        bot.run(bot.config['discord_token'])
+        bot.run(cfg.settings['discord_token'])
     except discord.LoginFailure:
         logger.error("Bot failed to log in, check discord token is valid in config.json")
 

@@ -22,3 +22,6 @@ class ConfigManager:
 
         else:
             logger.error(f"No settings named {key}")
+
+
+cfg = ConfigManager()

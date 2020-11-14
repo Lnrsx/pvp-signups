@@ -5,6 +5,8 @@ from utils.response_types import react_message, react
 from utils.utils import base_embed, get_logger
 from utils.dictionaries import spec_emotes
 from utils import exceptions
+from utils.config import cfg
+from utils.sheets import sheets
 
 from discord.ext import commands
 import discord
@@ -59,15 +61,14 @@ class Booking(object):
 
         cls.client = client
         if cls.request_channel is None:
-            cls.request_channel = commands.Bot.get_channel(cls.client, cls.client.config["request_booking_channel_id"])
+            cls.request_channel = commands.Bot.get_channel(cls.client, cfg.settings["request_booking_channel_id"])
         if cls.post_channel is None:
-            cls.post_channel = commands.Bot.get_channel(cls.client, cls.client.config["post_booking_channel_id"])
+            cls.post_channel = commands.Bot.get_channel(cls.client, cfg.settings["post_booking_channel_id"])
         if not cls.request_channel or not cls.post_channel:
             raise exceptions.ChannelNotFound
         try:
-            await cls.request_channel.fetch_message(cls.client.config["request_booking_message_id"])
+            await cls.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
         except discord.NotFound:
-            # both channels have been found since ChannelNotFound was not raised, they can be passed to the load retry in main
             raise exceptions.MessageNotFound
         with open("data/bookings.json", "r") as f:
             cache = json.load(f)
@@ -135,18 +136,18 @@ class Booking(object):
         embed.add_field(name='Buyer Name', value=f'[{self.buyer_name}-{self.buyer_realm}](https://check-pvp.fr/eu/{self.buyer_realm}/{self.buyer_name})')
         embed.add_field(name='Boost type', value=f"``{self.type}``")
         embed.add_field(name='Booster cut', value=f"``{round(self.boost_cut):,}g``")
-        embed.add_field(name='Buyer faction', value=f"{self.client.config[self.faction.lower()+'_emoji']}``{self.faction}``")
+        embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.faction.lower() + '_emoji']}``{self.faction}``")
         embed.add_field(name='Boost rating', value=f"``{self.rating}``")
         embed.add_field(name='Buyer Spec', value=f'{dictionaries.spec_emotes[self.buyer_class][self.buyer_spec]}``{self.buyer_spec} {self.buyer_class}``')
         embed.add_field(name='Notes', value=f"``{self.notes}``")
-        embed.set_footer(text=f"Winner will be picked in {self.client.config['post_wait_time']} seconds")
+        embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
         self.post_message = await self.post_channel.send(embed=embed)
         await self.author.send(embed=base_embed(
             f'Booking has been sent! booking ID is: ``{self.id}``.\n If the booking is taken,'
             ' you will be required to input the realm(s) the gold was taken on, '
             'booking will cancel if no users sign up'))
-        await self.post_message.add_reaction(self.client.config["take_emoji"])
-        await self.post_message.add_reaction(self.client.config["schedule_emoji"])
+        await self.post_message.add_reaction(cfg.settings["take_emoji"])
+        await self.post_message.add_reaction(cfg.settings["schedule_emoji"])
         self.status = 1
         return embed
 
@@ -157,13 +158,13 @@ class Booking(object):
         if they fail to do so before the configured timout, the booking will re rerolled"""
 
         if self.status == 1:
-            await asyncio.sleep(self.client.config["post_wait_time"])
+            await asyncio.sleep(cfg.settings["post_wait_time"])
             await self._recache_message()
-            reactions = await [i.users() for i in self.post_message.reactions if str(i.emoji) == self.client.config["take_emoji"]][0].flatten()
+            reactions = await [i.users() for i in self.post_message.reactions if str(i.emoji) == cfg.settings["take_emoji"]][0].flatten()
             reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "now"}
 
             if not reactions["users"]:
-                reactions = await [i.users() for i in self.post_message.reactions if str(i.emoji) == self.client.config["schedule_emoji"]][0].flatten()
+                reactions = await [i.users() for i in self.post_message.reactions if str(i.emoji) == cfg.settings["schedule_emoji"]][0].flatten()
                 reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "schedule"}
 
                 if not reactions["users"]:
@@ -184,7 +185,7 @@ class Booking(object):
             weight_file[self.bracket] = user_weights
             json.dump(weight_file, open(f'data/userweights.json', 'w'), indent=4)
             mention = ', **please mention your teammate**' \
-                      f' within {round(self.client.config["teammate_pick_timeout"] / 60)} minutes or the booking will be rerolled' if self.bracket == '3v3' else ''
+                      f' within {round(cfg.settings["teammate_pick_timeout"] / 60)} minutes or the booking will be rerolled' if self.bracket == '3v3' else ''
             await self.post_channel.send(
                 f"<@{self.booster}> was picked for {self.author.display_name}'s "
                 f"``{self.bracket} {self.type} {self.rating}`` boost ({reactions['time']}){mention}")
@@ -198,13 +199,13 @@ class Booking(object):
 
             winner_user = commands.Bot.get_user(self.client, int(self.booster))
             try:
-                winner_message = await commands.Bot.wait_for(self.client, event='message', check=mention_check, timeout=self.client.config["teammate_pick_timeout"])
+                winner_message = await commands.Bot.wait_for(self.client, event='message', check=mention_check, timeout=cfg.settings["teammate_pick_timeout"])
 
             except asyncio.TimeoutError:
                 embed.title = f"Rerolled {self.bracket} Bookings"
                 self.post_message = await self.post_channel.send(embed=embed)
-                await self.post_message.add_reaction(self.client.config["take_emoji"])
-                await self.post_message.add_reaction(self.client.config["schedule_emoji"])
+                await self.post_message.add_reaction(cfg.settings["take_emoji"])
+                await self.post_message.add_reaction(cfg.settings["schedule_emoji"])
                 return await self.pick_winner(embed)
 
             self.booster_2, self.boost_cut, self.boost_cut_2 = winner_message.mentions[0].id, self.boost_cut / 2, self.boost_cut / 2
@@ -225,7 +226,7 @@ class Booking(object):
 
         if self.status == 2:
             await self.get_gold_realms()
-            await self.client.sheets.add_pending_booking([
+            await sheets.add_pending_booking([
                 'pending', self.id, self.gold_realms, self.booster, self.boost_cut,
                 self.booster_2, self.boost_cut_2, str(self.author.id), str(self.ad_cut),
                 str(self.price), str(self.author), 'Pending booking completion'])
@@ -235,7 +236,7 @@ class Booking(object):
     async def update_sheet(self) -> bool:
 
         """Finds the booking instance by ID and updates the fields to the current instance attributes"""
-        sheet_booking = await self.client.sheets.get_pending_booking(self)
+        sheet_booking = await sheets.get_pending_booking(self)
         fields = [
             statuses[self.status], self.id, self.gold_realms, self.booster, self.boost_cut,
             self.booster_2, self.boost_cut_2, str(self.author.id), str(self.ad_cut),
@@ -244,7 +245,7 @@ class Booking(object):
         for i, item in enumerate(fields):
             sheet_booking[i].value = item
 
-        await self.client.sheets.update_booking(sheet_booking)
+        await sheets.update_booking(sheet_booking)
 
     async def refund(self, amount):
 
@@ -333,7 +334,7 @@ class Booking(object):
             self, '**buyers realm** (e.g. Ravencrest)'
             '\nor react with ❌ to cancel the booking', '❌')
 
-        if self.client.config["auto_faction_class_input"]:
+        if cfg.settings["auto_faction_class_input"]:
             response = await self.client.request.get(
                 f'https://eu.api.blizzard.com/profile/wow/character/{buyer_realm}/{buyer_name}?namespace=profile-eu&locale=en_GB', token=True)
             if response['status'] == 200:
@@ -343,15 +344,15 @@ class Booking(object):
 
             elif response['status'] == 404:
                 character_not_found_response = await react(
-                    self, [self.client.config['choose_faction_emoji'], '🔁'],
+                    self, [cfg.settings['choose_faction_emoji'], '🔁'],
                     "**No character was found with that name-realm**,"
                     " you can either input the buyers faction and class manually "
-                    f"{self.client.config['choose_faction_emoji']}, "
+                    f"{cfg.settings['choose_faction_emoji']}, "
                     "re-enter the name (🔁), or cancel the booking (❌).")
 
-                if str(character_not_found_response) == self.client.config["choose_faction_emoji"]:
+                if str(character_not_found_response) == cfg.settings["choose_faction_emoji"]:
                     self.faction = await react(
-                        self, [self.client.config["horde_emoji"], self.client.config["alliance_emoji"]],
+                        self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                         'React with the **buyers faction**\n'
                         'or react with ❌ to cancel the booking')
                     await self.manual_class_input()
@@ -363,15 +364,15 @@ class Booking(object):
                 await self.author.send(embed=base_embed(
                     "**Unexpected error occoured trying to find a player with that name-realm**,"
                     " you can either input the buyers faction and class manually "
-                    f"{self.client.config['choose_faction_emoji']}, or cancel the booking (❌)."))
+                    f"{cfg.settings['choose_faction_emoji']}, or cancel the booking (❌)."))
                 self.faction = await react(
-                    self, [self.client.config["horde_emoji"], self.client.config["alliance_emoji"]],
+                    self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                     'React with the **buyers faction**\n'
                     'or react with ❌ to cancel the booking')
                 await self.manual_class_input()
         else:
             self.faction = await react(
-                self, [self.client.config["horde_emoji"], self.client.config["alliance_emoji"]],
+                self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                 'React with the **buyers faction**\n'
                 'or react with ❌ to cancel the booking')
             await self.manual_class_input()
@@ -461,9 +462,9 @@ class Booking(object):
             assert int(boost_price) > 0, 'Boost price cannot be negative, please try again.'
             boost_price = int(boost_price)
             self.price = boost_price
-            self.boost_cut = boost_price * self.client.config["booster_cut"]
-            self.ad_cut = boost_price * self.client.config["advertiser_cut"]
-            self.management_cut = boost_price * self.client.config["management_cut"]
+            self.boost_cut = boost_price * cfg.settings["booster_cut"]
+            self.ad_cut = boost_price * cfg.settings["advertiser_cut"]
+            self.management_cut = boost_price * cfg.settings["management_cut"]
 
         except AssertionError as e:
             await self.author.send(str(e))
