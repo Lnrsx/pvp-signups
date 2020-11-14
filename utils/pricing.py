@@ -41,5 +41,5 @@ def one_win_price(bracket, current_rating):
     return pricing[bisect(one_win_brackets, current_rating) - 1]
 
 
-def hourly_price(bracket, boost_rating):
+def hourly_price(bracket):
     return hourly_pricing[bracket]

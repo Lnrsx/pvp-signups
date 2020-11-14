@@ -43,7 +43,7 @@ class SheetManager(object):
             return booking_row
         except CellNotFound:
             logger.error("SheetManager failed to find a booking that should be there")
-            raise exceptions.RequestFailed("Spreadsheet data is corrupted, please contact management")
+            raise exceptions.RequestFailed(f"Spreadsheet data is missing booking ``{booking.id}``, which should be there - please contact management")
         except AssertionError as e:
             raise exceptions.RequestFailed(str(e))
 

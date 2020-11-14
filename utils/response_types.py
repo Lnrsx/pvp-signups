@@ -2,6 +2,7 @@ import asyncio
 import discord
 from discord.ext import commands
 from utils.utils import base_embed
+from utils import exceptions
 
 
 async def react_message(booking, buyerinfo, reactions):
@@ -29,7 +30,10 @@ async def react_message(booking, buyerinfo, reactions):
 
         elif type(response[0]) == discord.reaction.Reaction and str(response[0]) != '❌':
             return str(response[0])
-    await booking.cancel()
+
+    await booking.author.send(embed=base_embed(f"Booking {booking.id} has been cancelled"))
+    await booking.delete()
+    raise exceptions.CancelBooking
 
 
 async def react(booking, reactions, description):

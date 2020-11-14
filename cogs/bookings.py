@@ -16,7 +16,7 @@ class Bookings(commands.Cog):
         cond2 = reaction.message_id == self.client.config["request_booking_message_id"]
         cond3 = reaction.emoji.name in [self.client.config["twos_emoji"], self.client.config["threes_emoji"]]
         if cond1 and cond2 and cond3:
-            author = await commands.Bot.fetch_user(self.client, reaction.user_id)
+            author = commands.Bot.get_user(self.client, reaction.user_id)
             bracket = '2v2' if reaction.emoji.name == self.client.config["twos_emoji"] else '3v3'
             booking = Booking(bracket, author)
             message = await Booking.request_channel.fetch_message(self.client.config["request_booking_message_id"])

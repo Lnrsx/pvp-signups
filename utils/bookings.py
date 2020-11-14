@@ -168,7 +168,9 @@ class Booking(object):
 
                 if not reactions["users"]:
                     await self.post_channel.send(embed=base_embed(f'No users signed up to booking ``{self.id}``'))
-                    await self.cancel()
+                    await self.author.send(embed=base_embed(f"Booking ``{self.id}`` was cancelled due to no users signing up"))
+                    self.delete()
+                    raise exceptions.CancelBooking
 
             weight_file = json.load(open(f'data/userweights.json', 'r'))
             user_weights = weight_file[self.bracket]
@@ -243,14 +245,6 @@ class Booking(object):
             sheet_booking[i].value = item
 
         await self.client.sheets.update_booking(sheet_booking)
-
-    async def cancel(self):
-
-        """Cancels a booking, can be due to user request or timeout"""
-
-        await self.author.send(embed=base_embed(f"Bookings ``{self.id}`` has been cancelled"))
-        self.delete()
-        raise exceptions.CancelBooking
 
     async def refund(self, amount):
 
@@ -445,7 +439,7 @@ class Booking(object):
 
                 else:
                     self.rating = boost_rating
-                    self.price_recommendation = hourly_price(self.bracket, int(boost_rating))
+                    self.price_recommendation = hourly_price(self.bracket)
 
             else:
                 await self.author.send("Rating format not recognised, please check your format and try again")
@@ -471,8 +465,8 @@ class Booking(object):
             self.ad_cut = boost_price * self.client.config["advertiser_cut"]
             self.management_cut = boost_price * self.client.config["management_cut"]
 
-        except AssertionError:
-            await self.author.send('Boost price cannot be negative, please try again.')
+        except AssertionError as e:
+            await self.author.send(str(e))
             await self.get_price(boost_type, price_recommendation)
 
     async def get_notes(self):
