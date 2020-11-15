@@ -1,5 +1,4 @@
 from utils import dictionaries
-from string import capwords
 from utils.pricing import set_rating_price, one_win_price, hourly_price
 from utils.response_types import react_message, react
 from utils.utils import base_embed, get_logger
@@ -11,6 +10,7 @@ from utils.sheets import sheets
 from discord.ext import commands
 import discord
 
+from string import capwords
 import uuid
 import asyncio
 import json
@@ -187,15 +187,8 @@ class Booking(object):
         await self._get_price(self.type, self.price_recommendation)
         await self._get_notes()
 
-    async def post(self) -> discord.Embed:
-
-        """:class:`discord.Embed`: Posts the compiled booking in the post bookings channel.
-
-        .. note::
-
-            The embed that is returned is used so that :meth:`pick_winner` can repost the booking
-            if the booster fails to mention a partner for a 3v3 booking.
-            """
+    async def post(self):
+        """:class:`discord.Embed`: Posts the compiled booking in the post bookings channel."""
         embed = discord.Embed(
             title='New {} booking'.format(self.bracket),
             description='**ID:** ``{}``'.format(self.id),
@@ -217,9 +210,8 @@ class Booking(object):
         await self.post_message.add_reaction(cfg.settings["take_emoji"])
         await self.post_message.add_reaction(cfg.settings["schedule_emoji"])
         self.status = 1
-        return embed
 
-    async def pick_winner(self, embed):
+    async def pick_winner(self):
         """Chooses the booster of the booking based on who reacted to the message, users who react with `now` will always be prioritized.
         In 3v3 boosts, the winner will be chosen and will have to mention their teammate,
         if they fail to do so before the configured timout, the booking will re rerolled.
@@ -275,15 +267,18 @@ class Booking(object):
                 winner_message = await commands.Bot.wait_for(self.client, event='message', check=mention_check, timeout=cfg.settings["teammate_pick_timeout"])
 
             except asyncio.TimeoutError:
+                embed = self.post_message.embeds[0]
                 embed.title = f"Rerolled {self.bracket} Bookings"
                 self.post_message = await self.post_channel.send(embed=embed)
                 await self.post_message.add_reaction(cfg.settings["take_emoji"])
                 await self.post_message.add_reaction(cfg.settings["schedule_emoji"])
-                return await self.pick_winner(embed)
+                return await self.pick_winner()
 
             self.booster_2, self.boost_cut, self.boost_cut_2 = winner_message.mentions[0].id, self.boost_cut / 2, self.boost_cut / 2
             await self.post_channel.send(embed=base_embed(f"<@{self.booster_2}> has been picked as {winner_user.mention}'s teammate"))
 
+        # post message is no longer relevent so is removed to save space in cache
+        self.post_message = None
         if self.boost_cut > 100000:
             for key, value in user_weights.items():
                 if key == self.booster:
@@ -372,14 +367,12 @@ class Booking(object):
         with open("data/bookings.json", "r") as f:
             data = json.load(f)
         with open("data/bookings.json", "w") as f:
-            author, channel, message = self.author, self.post_channel, self.post_message
-            # author and post message could be integers so fetching them just to get their id is pointless
-            self._author = self._author if isinstance(self._author, int) else self._author.id
-            Booking.post_channel = None
-            self.post_message = self.post_message if isinstance(self.post_message, int) else self.post_message.id
+            temp_author = self._author
+            if isinstance(self._author, discord.User):
+                self._author = self._author.id
             data[str(self.id)] = jsonpickle.encode(self)
             json.dump(data, f, indent=4)
-            self._author, Booking.post_channel, self.post_message = author, channel, message
+            self._author = temp_author
 
     def delete(self):
         """Deletes the booking from the interal instance cache and the external file at data/bookings.json"""
