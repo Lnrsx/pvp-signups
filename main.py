@@ -16,6 +16,16 @@ logger = get_logger('PvpSignups')
 
 
 class PvpSignups(commands.Bot):
+    """Represent the client used to access discord
+
+    Attributes
+    -----------
+    intents: :class:`discord.Intents`
+        The intents used by the clients, set to discord's default intents settings.
+    request: :class:`Request`
+        The class used to make HTTP requests, currently only being used to get a
+         player's ingame faction and class from the blizzard API servers
+    """
     def __init__(self):
         intents = discord.Intents.default()
         super().__init__(command_prefix=cfg.settings['command_prefix'], intents=intents)
@@ -49,6 +59,7 @@ class PvpSignups(commands.Bot):
         logger.info("Bot is ready")
 
     def startup(self):
+        """Performs the necessary checks on file integrity and loads cogs, must be called or the bot will not have any commands"""
         if not os.path.isdir('data'):
             os.mkdir("data")
         for file in ['bookings.json', 'token.json']:

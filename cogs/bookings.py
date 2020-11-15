@@ -24,8 +24,8 @@ class Bookings(commands.Cog):
             try:
                 await message.remove_reaction(reaction.emoji, author)
                 await booking.compile()
-                embed = await booking.post()
-                await booking.pick_winner(embed)
+                await booking.post()
+                await booking.pick_winner()
                 await booking.upload()
                 booking.cache()
             except exceptions.CancelBooking:

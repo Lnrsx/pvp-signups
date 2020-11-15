@@ -24,12 +24,12 @@ class AdminTools(commands.Cog):
                 booking_string += f'``{b.bracket} {b.type} {b.rating}``\n'
                 if b.status != 'posted':
                     booking_string += f'{"Boosters" if b.bracket == "3v3" else "Booster"}: '
-                    booking_string += f'<@{b.booster}> {f"and <@{b.booster_2}>" if b.bracket == "3v3" else ""}\n\u200b'
+                    booking_string += f'<@{b.booster}> {f"and <@{b.booster_2}>" if b.bracket == "3v3" else ""}'
                 else:
                     booking_string += 'Booster: ``N/A``\n'
             else:
                 booking_string += '``N/A``\nBooster: ``N/A``\n'
-            embed.add_field(name=f"ID: ``{b.id}``", value=booking_string, inline=False)
+            embed.add_field(name=f"\nID: ``{b.id}``", value=booking_string, inline=False)
         if embed.fields:
             await ctx.send(embed=embed)
         else:

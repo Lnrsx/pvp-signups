@@ -114,6 +114,11 @@ class Booking(object):
         -----------
         client: :class:'discord.commands.Bot`
             The client that is running the bot.
+
+        Raises
+        -------
+        ChannelNorFound
+            Booking and Post channels could not be found from given ID
         """
         cls.client = client
         if cls.request_channel is None:
