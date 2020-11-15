@@ -35,7 +35,6 @@ class Bookings(commands.Cog):
     async def done(self, ctx, booking_id):
         try:
             booking = Booking.get(booking_id)
-            assert booking, f"No booking found with ID ``{booking_id}``"
             assert booking.authorized(ctx.message.author.id), "You do not have permission to do that"
             await booking.complete()
         except AssertionError as e:
@@ -46,9 +45,8 @@ class Bookings(commands.Cog):
         try:
             assert amount.lower() in ['full', 'partial'], "Booking refund amount must be 'full' or 'partial'"
             booking = Booking.get(booking_id)
-            assert booking, f"No booking found with ID ``{booking_id}``"
             assert booking.authorized(ctx.message.author.id), "You do not have permission to do that"
-            await booking.refund(ctx.message.author.id, amount)
+            await booking.refund(ctx.message.author.id, True if amount == 'full' else False)
         except AssertionError as e:
             raise exceptions.RequestFailed(str(e))
 
@@ -56,7 +54,6 @@ class Bookings(commands.Cog):
     async def setgoldrealm(self, ctx, booking_id):
         try:
             booking = Booking.get(booking_id)
-            assert booking, f"No booking found with ID ``{booking_id}``"
             assert booking.authorized(ctx.message.author.id), "You do not have permission to do that"
             await booking.get_gold_realms()
             if booking.status in range(3, 7):

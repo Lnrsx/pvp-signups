@@ -16,18 +16,20 @@ async def react_message(booking, buyerinfo, reactions):
 
     for x in reactions:
         await local_embed.add_reaction(x)
-    pending_response = [commands.Bot.wait_for(booking.client, event='reaction_add', check=reaction_check),
-                        commands.Bot.wait_for(booking.client, event='message', check=message_check)
+
+    pending_response = [
+        commands.Bot.wait_for(booking.client, event='reaction_add', check=reaction_check),
+        commands.Bot.wait_for(booking.client, event='message', check=message_check)
                         ]
     done_tasks, pending_responses = await asyncio.wait(pending_response, timeout=300.0, return_when=asyncio.FIRST_COMPLETED)
     for task in pending_responses:
         task.cancel()
+
     if done_tasks:
         response = done_tasks.pop().result()
 
         if type(response) == discord.message.Message:
             return response.content
-
         elif type(response[0]) == discord.reaction.Reaction and str(response[0]) != '❌':
             return str(response[0])
 
@@ -39,22 +41,20 @@ async def react_message(booking, buyerinfo, reactions):
 async def react(booking, reactions, description):
 
     def check(reaction, user):
-        return (str(reaction.emoji) in reactions or ['❌']) and (booking.author.id == user.id) and (reaction.message.id == local_embed.id)
+        return (str(reaction.emoji) in reactions or ['❌']) and (booking.author.id == user.id) and (reaction.message.id == embed.id)
 
-    local_embed = await booking.author.send(embed=base_embed(description))
+    embed = await booking.author.send(embed=base_embed(description))
 
     for x in reactions:
-        await local_embed.add_reaction(x)
-    await local_embed.add_reaction('❌')
+        await embed.add_reaction(x)
+    await embed.add_reaction('❌')
 
     try:
         response = await commands.Bot.wait_for(booking.client, event='reaction_add', check=check)
-
     except asyncio.TimeoutError:
         await booking.cancel()
 
     if response[0].emoji != '❌':
         return response[0].emoji
-
     else:
         await booking.cancel()

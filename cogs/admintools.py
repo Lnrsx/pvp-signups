@@ -43,23 +43,19 @@ class AdminTools(commands.Cog):
             command_string = f"**{self.client.command_prefix}{command} "
             for name, param in command.clean_params.items():
                 command_string += f"<{name.replace('_', ' ')}"
-                if param.default is not Parameter.empty:
-                    if param.default is not None:
-                        command_string += f": {param.default}> "
-                        continue
+                if param.default is not Parameter.empty and param.default is not None:
+                    command_string += f": {param.default}> "
+                    continue
                 command_string += '> '
-
             command_string += f'**\n{command.description}' if command.description else ''
             embed.add_field(name='\u200b', value=command_string, inline=False)
-        embed.set_footer(text="A colon in a parameter represents the default if no argument is given")
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(description="Transfers ownship (the advertiser) of a booking")
     @commands.has_permissions(administrator=True)
     async def transferbooking(self, ctx, booking_id, user: discord.User):
         booking = Booking.get(booking_id)
         try:
-            assert booking, f"No booking was found with ID ``{booking.id}``"
             assert booking.status >= 3, "Booking that have not yet been posted cannot have ownership transferred"
             if booking.authorid != ctx.message.author.id:
                 await booking.author.send(embed=base_embed(
