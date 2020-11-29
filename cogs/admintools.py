@@ -1,6 +1,6 @@
 from discord.ext import commands
 import discord
-from utils.misc import base_embed
+from utils.utils import base_embed
 from utils import exceptions
 from utils.bookings import Booking, statuses
 from inspect import Parameter

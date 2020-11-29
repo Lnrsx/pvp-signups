@@ -1,7 +1,7 @@
 from utils import dictionaries
 from utils.pricing import set_rating_price, one_win_price, hourly_price
 from utils.response_types import react_message, react
-from utils.misc import base_embed, get_logger
+from utils.utils import base_embed, get_logger
 from utils.dictionaries import spec_emotes
 from utils import exceptions
 from utils.config import cfg

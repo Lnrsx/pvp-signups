@@ -3,7 +3,7 @@ import json
 from time import time
 from datetime import datetime
 from utils import exceptions
-from utils.misc import get_logger
+from utils.utils import get_logger
 from utils.config import cfg
 
 logger = get_logger('PvpSignups')
