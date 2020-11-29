@@ -1,26 +1,58 @@
+# All entries to class_spec_abbreviations must have the first letter capitalized
+
 class_specs_abbreviations = {
-    'Death Knight': {'Uh': 'Unholy'},
-    'Demon Hunter': {},
-    'Druid': {'Boomie': 'Balance', 'Resto': 'Restoration'},
-    'Hunter': {'Bm': 'Beast Mastery', 'Mm': 'Marksman'},
+    'Death knight': {
+        'Uh': 'Unholy'
+        },
+    'Demon hunter': {},
+    'Druid': {
+        'Boomie': 'Balance', 
+        'Resto': 'Restoration'
+        },
+    'Hunter': {
+        'Bm': 'Beast mastery', 
+        'Mm': 'Marksman'
+        },
     'Mage': {},
-    'Monk': {'Bm': 'Brewmaster', 'Mw': 'Mistweaver', 'Ww': 'Windwalker'},
-    'Paladin': {'Prot': 'Protection', 'Ret': 'Retribution'},
-    'Priest': {'Disc': 'Discipline'},
-    'Rogue': {'Assa': 'Assassination', 'Sub': 'Subtelty'},
-    'Shaman': {'Ele': 'Elemental', 'Enhance': 'Enhancement', 'Resto': 'Restoration'},
-    'Warlock': {'Affli': 'Affliction', 'Demo': 'Demonology', 'Desto': 'Destruction'},
-    'Warrior': {'Prot': 'Protection'}
+    'Monk': {
+        'Bm': 'Brewmaster', 
+        'Mw': 'Mistweaver', 
+        'Ww': 'Windwalker'
+        },
+    'Paladin': {
+        'Prot': 'Protection', 
+        'Ret': 'Retribution'
+        },
+    'Priest': {
+        'Disc': 'Discipline'
+        },
+    'Rogue': {
+        'Assa': 'Assassination', 
+        'Sub': 'Subtelty'
+        },
+    'Shaman': {
+        'Ele': 'Elemental', 
+        'Enhance': 'Enhancement', 
+        'Resto': 'Restoration'
+        },
+    'Warlock': {
+        'Affli': 'Affliction', 
+        'Demo': 'Demonology', 
+        'Desto': 'Destruction'
+        },
+    'Warrior': {
+        'Prot': 'Protection'
+        }
 }
 
 boost_types = ['Hourly', '1 win', 'Set rating']
 
 spec_emotes = {
-    'Death Knight': {
+    'Death knight': {
         'Blood': '<:blood:747166380800999555>',
         'Frost': '<:frost:747166381186875531>',
         'Unholy': '<:unholy:747166380960382997>'},
-    'Demon Hunter': {
+    'Demon hunter': {
         'Havoc': '<:havoc:747168010065805445>',
         'Vengeance': '<:vengance:747168010095165501>'},
     'Druid': {
@@ -91,7 +123,7 @@ connected_realms = [
     ['Burninglegion', "Al'akir", 'Skullcrusher', 'Xavius'],
     ['Dalaran', "Cho'gall", "Eldre'thalas", 'Marécagedezangar', 'Sinstralis'],
     ['Deathwing', 'Karazhan', "Lightning's Blade", 'The Maelstrom'],
-    ['Defiasbrotherhood', 'Ravenholdt', 'Scarshield Legion', 'Sporeggar', 'The Venture Co'],
+    ['Defiasbrotherhood', 'Ravenholdt', 'Scarshield legion', 'Sporeggar', 'The venture co'],
     ['Doomhammer', 'Turalyon'],
     ['Draenor'],
     ['Dragonmaw', 'Haomarush', 'Spinebreaker', 'Vashj'],
@@ -132,7 +164,7 @@ realm_abbreviations = {
     "Chantseternels": "Chantséternels"
 }
 
-
+# when displaying any string from bank_characters, format using horde and alliance emotes in config.json
 bank_characters = {
     "Kazzak": "{0}Pakix-Kazzak",
     "Twistingnether": "{0}Pakix-TwistingNether",

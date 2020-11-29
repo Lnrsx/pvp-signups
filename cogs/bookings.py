@@ -28,6 +28,7 @@ class Bookings(commands.Cog):
                 await booking.pick_winner()
                 await booking.upload()
                 booking.cache()
+
             except exceptions.CancelBooking:
                 pass
 

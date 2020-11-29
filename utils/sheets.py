@@ -1,7 +1,7 @@
 import gspread_asyncio
 from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import CellNotFound
-from utils.utils import get_logger
+from utils.misc import get_logger
 from utils import exceptions
 from utils.config import cfg
 
@@ -72,6 +72,13 @@ class SheetManager:
         """Updates the booking cells with the new values of :class:`Booking`"""
         sheet1 = await self.open_sheet()
         await sheet1.update_cells(booking_cells, value_input_option='USER_ENTERED')
+
+    async def grab_sheet(self):
+        """Gets all bookings from the sheet, used to validate sheet with internal cache"""
+        sheet1 = await self.open_sheet()
+        sheetinfo = await sheet1.get_all_values()
+        return sheetinfo
+
 
 
 sheets = SheetManager()

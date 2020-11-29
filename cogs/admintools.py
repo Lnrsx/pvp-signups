@@ -1,6 +1,6 @@
 from discord.ext import commands
 import discord
-from utils.utils import base_embed
+from utils.misc import base_embed
 from utils import exceptions
 from utils.bookings import Booking, statuses
 from inspect import Parameter
@@ -77,6 +77,12 @@ class AdminTools(commands.Cog):
 
         except AssertionError as e:
             raise exceptions.RequestFailed(str(e))
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def validatesheet(self, ctx):
+        response = await Booking.validate()
+        await ctx.send(embed=base_embed(response))
 
 
 def setup(client):
