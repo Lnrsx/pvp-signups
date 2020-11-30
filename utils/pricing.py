@@ -2,7 +2,7 @@ from bisect import bisect
 import json
 
 
-price_list = json.load(open("data/pricing.json"))
+price_list = json.load(open("data/pricing.json", "r"))
 
 
 def set_rating(bracket, current_rating, end_rating) -> str:
