@@ -1,5 +1,5 @@
 from utils import dictionaries
-from utils.pricing import set_rating_price, one_win_price, hourly_price
+from utils import pricing
 from utils.misc import base_embed, get_logger
 from utils.dictionaries import spec_emotes
 from utils import exceptions
@@ -519,12 +519,12 @@ class Booking(object):
                 and len(boost_rating.split('-')) == 2:
             start_rating, end_rating = int(boost_rating.split("-")[0]), int(boost_rating.split("-")[1])
             self.rating = boost_rating
-            self.price_recommendation = set_rating_price(self.bracket, start_rating, end_rating)
+            self.price_recommendation = pricing.set_rating(self.bracket, start_rating, end_rating)
 
         elif boost_rating.isnumeric() and int(boost_rating) in range(0, 3501):
             if self.type == '1 win':
                 self.rating = boost_rating
-                self.price_recommendation = one_win_price(self.bracket, int(boost_rating))
+                self.price_recommendation = pricing.one_win(self.bracket, int(boost_rating))
 
             elif self.type == 'Gladiator':
                 self.rating = boost_rating
@@ -532,7 +532,7 @@ class Booking(object):
 
             else:
                 self.rating = boost_rating
-                self.price_recommendation = hourly_price(self.bracket)
+                self.price_recommendation = pricing.hourly(self.bracket)
 
         else:
             await self.author.send("Rating format not recognised, please check your format and try again")
@@ -599,7 +599,7 @@ class Booking(object):
             current_rating = await commands.Bot.wait_for(self.client, event='message', check=self._msg_check_wrapper(), timeout=300)
             current_rating = current_rating.content
             if current_rating.isnumeric():
-                self.price_recommendation = self.price - set_rating_price(self.bracket, self.rating.split("-")[0], int(current_rating))
+                self.price_recommendation = self.price - pricing.set_rating(self.bracket, self.rating.split("-")[0], int(current_rating))
                 await self.refund_price()
 
             else:
