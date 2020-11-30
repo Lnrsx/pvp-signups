@@ -1,6 +1,5 @@
 from utils import dictionaries
 from utils.pricing import set_rating_price, one_win_price, hourly_price
-from utils.response_types import react_message, react
 from utils.misc import base_embed, get_logger
 from utils.dictionaries import spec_emotes
 from utils import exceptions
@@ -404,7 +403,7 @@ class Booking(object):
 
     async def _get_boost_type(self):
         fields = '\n'.join(dictionaries.boost_types + dictionaries.bracket_boost_types[self.bracket])
-        boost_type = await react_message(
+        boost_type = await self.client.request.react_message(
             self, f"the **boost type**, accepted respones:\n"
             f" {fields}\nor react with ❌ to cancel the booking", '❌')
         if boost_type in dictionaries.boost_types:
@@ -416,10 +415,10 @@ class Booking(object):
             await self._get_boost_type()
 
     async def _get_name_faction_class(self):
-        buyer_name = await react_message(
+        buyer_name = await self.client.request.react_message(
             self, '**buyers character name** (e.g. Mystikdruldk)'
                   '\nor react with ❌ to cancel the booking', '❌')
-        buyer_realm = await react_message(
+        buyer_realm = await self.client.request.react_message(
             self, '**buyers realm** (e.g. Ravencrest)'
             '\nor react with ❌ to cancel the booking', '❌')
 
@@ -432,7 +431,7 @@ class Booking(object):
                 self.buyer_realm = buyer_realm
 
             elif response['status'] == 404:
-                character_not_found_response = await react(
+                character_not_found_response = await self.client.request.react(
                     self, [cfg.settings['choose_faction_emoji'], '🔁'],
                     "**No character was found with that name-realm**,"
                     " you can either input the buyers faction and class manually "
@@ -440,7 +439,7 @@ class Booking(object):
                     "re-enter the name (🔁), or cancel the booking (❌).")
 
                 if str(character_not_found_response) == cfg.settings["choose_faction_emoji"]:
-                    self.faction = await react(
+                    self.faction = await self.client.request.react(
                         self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                         'React with the **buyers faction**\n'
                         'or react with ❌ to cancel the booking')
@@ -454,13 +453,13 @@ class Booking(object):
                     "**Unexpected error occoured trying to find a player with that name-realm**,"
                     " you can either input the buyers faction and class manually "
                     f"{cfg.settings['choose_faction_emoji']}, or cancel the booking (❌)."))
-                self.faction = await react(
+                self.faction = await self.client.request.react(
                     self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                     'React with the **buyers faction**\n'
                     'or react with ❌ to cancel the booking')
                 await self.manual_class_input()
         else:
-            self.faction = await react(
+            self.faction = await self.client.request.react(
                 self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                 'React with the **buyers faction**\n'
                 'or react with ❌ to cancel the booking')
@@ -468,7 +467,7 @@ class Booking(object):
 
     async def manual_class_input(self):
         fields = '\n'.join(dictionaries.class_emotes)
-        buyer_class = await react_message(
+        buyer_class = await self.client.request.react_message(
             self, f'the **buyers class**, accepted responses:\n {fields}\n'
             'or react with ❌ to cancel the booking', '❌')
         if buyer_class in dictionaries.spec_emotes.keys():
@@ -483,7 +482,7 @@ class Booking(object):
         accepted_inputs_string = ''
         for i in spec_emotes[self.buyer_class].keys():
             accepted_inputs_string += spec_emotes[self.buyer_class][i] + i + '\n'
-        buyer_spec = await react_message(
+        buyer_spec = await self.client.request.react_message(
             self, f'the **buyers spec**,'
             f' accepted respones:\n {accepted_inputs_string}', '❌')
 
@@ -507,7 +506,7 @@ class Booking(object):
         else:
             boost_rating_format_string = 'the **buyers current rating (e.g. 1687)'
 
-        boost_rating = await react_message(
+        boost_rating = await self.client.request.react_message(
             self, boost_rating_format_string
             + '\nor react with ❌ to cancel the booking**', '❌')
 
@@ -538,7 +537,7 @@ class Booking(object):
     async def _get_price(self):
         if not (self.type, self.price_recommendation):
             raise exceptions.RequestFailed("Cannot get price when boost type / price recommendation are not known")
-        boost_price = await react_message(
+        boost_price = await self.client.request.react_message(
             self, f'the **total boost price**,\n recommended price: **{self.price_recommendation:,}**g', '')
         boost_price = boost_price.replace(",", "").replace(".", "")
 
@@ -557,13 +556,13 @@ class Booking(object):
             await self._get_price()
 
     async def _get_notes(self):
-        self.notes = await react_message(
+        self.notes = await self.client.request.react_message(
             self, '**any additional notes** about the buyer, react with ⏩ to skip\n'
             'or react with ❌ to cancel the booking', ['⏩', '❌'])
         self.notes = 'N/A' if self.notes == '⏩' else self.notes
 
     async def get_gold_realms(self):
-        self.gold_realms = await react_message(
+        self.gold_realms = await self.client.request.react_message(
             self, 'the **realm the gold was collected on**\n'
             'if gold was collected on multiple realms, specify all of them seperated by commas\n'
             '(e.g. Draenor, TarrenMill, Kazzak)', '', timeout=None)

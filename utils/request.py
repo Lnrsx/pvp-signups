@@ -1,16 +1,21 @@
+import asyncio
+
 import aiohttp
 import json
 from time import time
 from datetime import datetime
+
+import discord
+from discord.ext import commands
 from utils import exceptions
-from utils.misc import get_logger
+from utils.misc import get_logger, base_embed
 from utils.config import cfg
 
 logger = get_logger('PvpSignups')
 
 
 class Request(object):
-    """Asynchronous handler for HTTP requests
+    """Asynchronous handler for (most) API requests
 
     Attributes
     -----------
@@ -77,3 +82,71 @@ class Request(object):
                     return cache
                 else:
                     return {'status': response.status}
+
+    async def react_message(self, booking, buyerinfo, reactions, timeout=300):
+        """Used to get information for the booking author in message or reaction form
+
+        Parameters
+        -----------
+        booking: :class:`Booking`
+            A booking object
+        buyerinfo: :class:`str`
+            The string the buyer will be sent, 'Please respond with' will be added to the front of the message before sending
+        reactions: :class:`list`
+            A list of the reactions that will be added to the message
+        timeout: :class:`int`
+            Time in seconds to wait for a response before raising :class:`RequestFailed` (or :class:`CancelBooking`)
+        """
+        local_embed = await booking.author.send(embed=base_embed(f'Please respond with {buyerinfo}'))
+
+        def reaction_check(reaction, user):
+            return (str(reaction.emoji) in reactions) and (booking.author.id == user.id) and (reaction.message.id == local_embed.id)
+
+        def message_check(message):
+            return message.channel.id == booking.author.dm_channel.id and message.author == booking.author
+
+        for x in reactions:
+            await local_embed.add_reaction(x)
+
+        pending_response = [
+            commands.Bot.wait_for(self.client, event='reaction_add', check=reaction_check),
+            commands.Bot.wait_for(self.client, event='message', check=message_check)
+        ]
+        done_tasks, pending_responses = await asyncio.wait(pending_response, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
+        for task in pending_responses:
+            task.cancel()
+
+        if done_tasks:
+            response = done_tasks.pop().result()
+
+            if type(response) == discord.message.Message:
+                return response.content.capitalize()
+            elif type(response[0]) == discord.reaction.Reaction and str(response[0]) != '❌':
+                return str(response[0])
+        if booking.status == 0:
+            await booking.author.send(embed=base_embed(f"Booking {booking.id} has been cancelled"))
+            await booking.delete()
+            raise exceptions.CancelBooking
+        else:
+            raise exceptions.RequestFailed("Request timed out")
+
+    async def react(self, booking, reactions, description):
+
+        def check(reaction, user):
+            return (str(reaction.emoji) in reactions or ['❌']) and (booking.author.id == user.id) and (reaction.message.id == embed.id)
+
+        embed = await booking.author.send(embed=base_embed(description))
+
+        for x in reactions:
+            await embed.add_reaction(x)
+        await embed.add_reaction('❌')
+
+        try:
+            response = await commands.Bot.wait_for(self.client, event='reaction_add', check=check)
+        except asyncio.TimeoutError:
+            await booking.cancel()
+
+        if response[0].emoji != '❌':
+            return response[0].emoji
+        else:
+            await booking.cancel()
