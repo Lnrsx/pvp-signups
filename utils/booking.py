@@ -614,19 +614,15 @@ class Booking(object):
             f'recommendation: **{recommendation}**g\n reqest will timout in 5 minutes'))
         try:
             refund_amount = await commands.Bot.wait_for(self.client, event='message', check=self._msg_check_wrapper(), timeout=300)
-            refund_amount = refund_amount.content.replace(",", "").replace(".", "")
-
-            if refund_amount.isnumeric() and int(refund_amount) in range(0, self.price):
-                return (self.price - int(refund_amount)) / self.price
-
-            else:
-                raise ValueError
-
-        except ValueError:
-            await self.refund_price()
-
         except asyncio.TimeoutError:
-            await self.author.send(embed=base_embed("Request timed out"))
+            raise exceptions.RequestFailed("Request timed out")
+        refund_amount = refund_amount.content.replace(",", "").replace(".", "")
+
+        if refund_amount.isnumeric() and int(refund_amount) in range(0, self.price):
+            return (self.price - int(refund_amount)) / self.price
+
+        else:
+            await self.refund_price()
 
     async def get_attachment_link(self):
         def attachment_check(message) -> bool:

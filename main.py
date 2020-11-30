@@ -93,6 +93,7 @@ class PvpSignups(commands.Bot):
             await ctx.send("Invalid Argument")
 
         elif isinstance(error, exceptions.RequestFailed):
+            logger.warning(f"Command request raised an exception: {error}")
             await ctx.send(embed=base_embed(str(error)))
 
         else:
