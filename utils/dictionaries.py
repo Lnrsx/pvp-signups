@@ -46,6 +46,11 @@ class_specs_abbreviations = {
 }
 
 boost_types = ['Hourly', '1 win', 'Set rating']
+bracket_boost_types = {
+    '2v2': [],
+    '3v3': ['Gladiator']
+}
+
 
 spec_emotes = {
     'Death knight': {

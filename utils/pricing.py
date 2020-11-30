@@ -12,12 +12,13 @@ hourly_pricing = {
     "2v2": 325000,
     "3v3": 650000
 }
+glad_above_2100_pricing = 800000
 
 brackets = [0, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2401]
 one_win_brackets = [0, 1800, 2100, 2400, 3501]
 
 
-def set_rating_price(bracket, current_rating, end_rating):
+def set_rating_price(bracket, current_rating, end_rating) -> str:
     price, pricing = 0, set_rating_pricing[bracket]
     # while the current rating is below the end rating's pricing bracket, jumps to the next bracket and adds the price of that rating
     while bisect(brackets, current_rating) < bisect(brackets, end_rating):
@@ -33,7 +34,7 @@ def set_rating_price(bracket, current_rating, end_rating):
     return price
 
 
-def one_win_price(bracket, current_rating):
+def one_win_price(bracket, current_rating) -> str:
     pricing = one_win_pricing[bracket]
     if current_rating > one_win_brackets[-1]:
         current_rating = one_win_brackets[-1]
@@ -41,5 +42,5 @@ def one_win_price(bracket, current_rating):
     return pricing[bisect(one_win_brackets, current_rating) - 1]
 
 
-def hourly_price(bracket):
+def hourly_price(bracket) -> str:
     return hourly_pricing[bracket]

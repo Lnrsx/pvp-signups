@@ -60,7 +60,7 @@ class SheetManager:
             sheet1 = await self.open_sheet()
             booking_cell = await sheet1.find(booking.id)
             booking_row = await sheet1.range(f"A{booking_cell.row}:L{booking_cell.row}")
-            assert booking_row[0].value == 'pending', "Booking has already been completed"
+            assert booking_row[0].value == 'Pending', "Booking has already been completed"
             return booking_row
         except CellNotFound:
             logger.error("SheetManager failed to find a booking that should be there")
@@ -78,7 +78,6 @@ class SheetManager:
         sheet1 = await self.open_sheet()
         sheetinfo = await sheet1.get_all_values()
         return sheetinfo
-
 
 
 sheets = SheetManager()

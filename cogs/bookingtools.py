@@ -1,5 +1,5 @@
 from discord.ext import commands
-from utils.bookings import Booking
+from utils.booking import Booking
 from utils import exceptions
 from utils.config import cfg
 

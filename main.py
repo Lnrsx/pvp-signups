@@ -1,6 +1,6 @@
-from utils.utils import get_logger, base_embed
+from utils.misc import get_logger, base_embed
 from utils.request import Request
-from utils.bookings import Booking
+from utils.booking import Booking
 from utils import exceptions
 from utils.config import cfg
 

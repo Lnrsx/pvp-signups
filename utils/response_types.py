@@ -5,7 +5,7 @@ from utils.misc import base_embed
 from utils import exceptions
 
 
-async def react_message(booking, buyerinfo, reactions):
+async def react_message(booking, buyerinfo, reactions, timeout=300):
     local_embed = await booking.author.send(embed=base_embed(f'Please respond with {buyerinfo}'))
 
     def reaction_check(reaction, user):
@@ -21,7 +21,7 @@ async def react_message(booking, buyerinfo, reactions):
         commands.Bot.wait_for(booking.client, event='reaction_add', check=reaction_check),
         commands.Bot.wait_for(booking.client, event='message', check=message_check)
                         ]
-    done_tasks, pending_responses = await asyncio.wait(pending_response, timeout=300.0, return_when=asyncio.FIRST_COMPLETED)
+    done_tasks, pending_responses = await asyncio.wait(pending_response, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
     for task in pending_responses:
         task.cancel()
 
@@ -29,13 +29,13 @@ async def react_message(booking, buyerinfo, reactions):
         response = done_tasks.pop().result()
 
         if type(response) == discord.message.Message:
-            return response.content
+            return response.content.capitalize()
         elif type(response[0]) == discord.reaction.Reaction and str(response[0]) != '❌':
             return str(response[0])
-
-    await booking.author.send(embed=base_embed(f"Booking {booking.id} has been cancelled"))
-    await booking.delete()
-    raise exceptions.CancelBooking
+    else:
+        await booking.author.send(embed=base_embed(f"Booking {booking.id} has been cancelled"))
+        await booking.delete()
+        raise exceptions.CancelBooking
 
 
 async def react(booking, reactions, description):

@@ -2,7 +2,7 @@ from discord.ext import commands
 import utils.response_types
 import json
 from discord import Member
-from utils.utils import base_embed
+from utils.misc import base_embed
 
 
 class Blpcommands(commands.Cog):
@@ -26,7 +26,7 @@ class Blpcommands(commands.Cog):
         users = [x.display_name for x in members]
         weights = [str(round(user_weights[str(x.id)], 2)) if str(x.id) in user_weights.keys() else '1' for x in members]
 
-        embed = utils.utils.base_embed('Bad luck protection values for ' + bracket)
+        embed = utils.misc.base_embed('Bad luck protection values for ' + bracket)
         embed.add_field(
             name='__Name:__',
             value='\n'.join(users)
