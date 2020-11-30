@@ -169,8 +169,12 @@ class Booking(object):
         not_on_sheet = [x for x in cachefields if x not in sheet and x[0] not in statuses[0:3]]
         not_in_cache = [x for x in sheet if x not in cachefields and x[0] not in statuses[4:]]
         if not_in_cache or not_on_sheet:
-            return f"{len(not_on_sheet)} bookings found not on sheet, {len(not_in_cache)} bookings found not in cache"
-        return "Sheet is valid"
+            response = f"Sheet check completed - {len(not_on_sheet)} bookings found not on sheet, {len(not_in_cache)} bookings found not in cache"
+            logger.warning(response)
+        else:
+            response = "Sheet check completed - Sheet is valid"
+            logger.info(response)
+        return response
 
     @property
     def author(self) -> discord.User:
@@ -426,7 +430,7 @@ class Booking(object):
             response = await self.client.request.get(
                 f'https://eu.api.blizzard.com/profile/wow/character/{buyer_realm.lower()}/{buyer_name.lower()}?namespace=profile-eu&locale=en_GB', token=True)
             if response['status'] == 200:
-                self.faction, self.buyer_class = response['body']['faction']['name'], response['body']['character_class']['name']
+                self.faction, self.buyer_class = response['body']['faction']['name'], response['body']['character_class']['name'].capitalize()
                 self.buyer_name = buyer_name
                 self.buyer_realm = buyer_realm
 
@@ -646,7 +650,7 @@ class Booking(object):
         if self.type == "Gladiator":
             return "``See glad pricing``"
         else:
-            price_recommendation_string = f"{boost_cut_recommendation:,}g"
+            price_recommendation_string = f"{round(boost_cut_recommendation):,}g"
             if self.type == 'Hourly':
                 price_recommendation_string += "/hr"
             return f"``{price_recommendation_string}``"

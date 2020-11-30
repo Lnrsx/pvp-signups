@@ -131,7 +131,7 @@ class Request(object):
             raise exceptions.RequestFailed("Request timed out")
 
     async def react(self, booking, reactions, description):
-
+        """Same function as react_message but only works with reaction, also has no timeout"""
         def check(reaction, user):
             return (str(reaction.emoji) in reactions or ['❌']) and (booking.author.id == user.id) and (reaction.message.id == embed.id)
 
