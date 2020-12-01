@@ -1,3 +1,6 @@
+__version__ = "1.0.0"
+
+
 from utils.misc import get_logger, base_embed
 from utils.request import request
 from utils.booking import Booking
