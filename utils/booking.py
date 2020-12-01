@@ -1,7 +1,5 @@
-from utils import dictionaries
 from utils import pricing
 from utils.misc import base_embed, get_logger
-from utils.dictionaries import spec_emotes
 from utils.request import request
 from utils import exceptions
 from utils.config import cfg
@@ -219,7 +217,7 @@ class Booking(object):
         embed.add_field(name='Booster cut', value=self.format_price_recommendation())
         embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.faction.lower() + '_emoji']}``{self.faction}``")
         embed.add_field(name='Boost rating', value=f"``{self.rating}``")
-        embed.add_field(name='Buyer Spec', value=f'{dictionaries.spec_emotes[self.buyer_class][self.buyer_spec]}``{self.buyer_spec} {self.buyer_class}``')
+        embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer_class][self.buyer_spec]}``{self.buyer_spec} {self.buyer_class}``')
         embed.add_field(name='Notes', value=f"``{self.notes}``")
         embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
         self.post_message = await self.post_channel.send(embed=embed)
@@ -408,13 +406,13 @@ class Booking(object):
                 del self.instances[i]
 
     async def _get_boost_type(self):
-        fields = '\n'.join(dictionaries.boost_types + dictionaries.bracket_boost_types[self.bracket])
+        fields = '\n'.join(cfg.data['boost_types'] + cfg.data['bracket_boost_types'][self.bracket])
         boost_type = await request.react_message(
             self, f"the **boost type**, accepted respones:\n"
             f" {fields}\nor react with ❌ to cancel the booking", '❌')
-        if boost_type in dictionaries.boost_types:
+        if boost_type in cfg.data['boost_types']:
             self.type = boost_type
-        elif boost_type in dictionaries.bracket_boost_types[self.bracket]:
+        elif boost_type in cfg.data['bracket_boost_types'][self.bracket]:
             self.type = boost_type
         else:
             await self.author.send('Boost type not recognised, please try again.')
@@ -445,10 +443,11 @@ class Booking(object):
                     "re-enter the name (🔁), or cancel the booking (❌).")
 
                 if str(character_not_found_response) == cfg.settings["choose_faction_emoji"]:
-                    self.faction = await request.react(
+                    faction_response = await request.react(
                         self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                         'React with the **buyers faction**\n'
                         'or react with ❌ to cancel the booking')
+                    self.faction = faction_response.name
                     await self.manual_class_input()
 
                 if str(character_not_found_response) == '🔁':
@@ -472,34 +471,37 @@ class Booking(object):
             await self.manual_class_input()
 
     async def manual_class_input(self):
-        fields = '\n'.join(dictionaries.class_emotes)
+        fields = '\n'.join(cfg.data['class_emotes'])
         buyer_class = await request.react_message(
             self, f'the **buyers class**, accepted responses:\n {fields}\n'
             'or react with ❌ to cancel the booking', '❌')
-        if buyer_class in dictionaries.spec_emotes.keys():
+        if buyer_class in cfg.data['specs_abbreviations'].keys():
             self.buyer_class = buyer_class
         else:
-            await self.author.send('Class not recognised, please try again.')
-            await self.manual_class_input()
+            if buyer_class in cfg.data['class_abbreviations'].keys():
+                self.buyer_class = cfg.data['class_abbreviations'][buyer_class]
+            else:
+                await self.author.send('Class not recognised, please try again.')
+                await self.manual_class_input()
 
     async def _get_spec(self):
         if not self.buyer_class:
             raise exceptions.RequestFailed("Cannot get spec when class is not known")
         accepted_inputs_string = ''
-        for i in spec_emotes[self.buyer_class].keys():
-            accepted_inputs_string += spec_emotes[self.buyer_class][i] + i + '\n'
+        for i in cfg.data['spec_emotes'][self.buyer_class].keys():
+            accepted_inputs_string += cfg.data['spec_emotes'][self.buyer_class][i] + i + '\n'
         buyer_spec = await request.react_message(
             self, f'the **buyers spec**,'
             f' accepted respones:\n {accepted_inputs_string}', '❌')
 
-        if buyer_spec not in dictionaries.spec_emotes[self.buyer_class].keys() and buyer_spec not in list(dictionaries.class_specs_abbreviations[self.buyer_class].keys()):
+        if buyer_spec not in cfg.data['spec_emotes'][self.buyer_class].keys() and buyer_spec not in list(cfg.data['specs_abbreviations'][self.buyer_class].keys()):
             await self.author.send('Spec not recognised, please try again.')
             await self._get_spec()
 
         else:
             # translates spec abbreivation to proper class name if it is used
-            if buyer_spec in list(dictionaries.class_specs_abbreviations[self.buyer_class].keys()):
-                buyer_spec = dictionaries.class_specs_abbreviations[self.buyer_class][buyer_spec]
+            if buyer_spec in list(cfg.data['specs_abbreviations'][self.buyer_class].keys()):
+                buyer_spec = cfg.data['specs_abbreviations'][self.buyer_class][buyer_spec]
 
             self.buyer_spec = buyer_spec
 
@@ -577,15 +579,15 @@ class Booking(object):
         # iterate through the user-entered realm seperated by commas
         for realm in gold_realms_list:
             # iterate through connected realm groups (1 group is a list of its own)
-            for x in dictionaries.connected_realms:
+            for x in cfg.data['connected_realms']:
                 # if one of the inputted realms matches a realm
-                if realm in dictionaries.realm_abbreviations.keys():
-                    realm = dictionaries.realm_abbreviations[realm]
+                if realm in cfg.data['realm_abbreviations'].keys():
+                    realm = cfg.data['realm_abbreviations'][realm]
 
                 if realm in x:
                     # always uses the name of the first realm in the list (where the bank character is)
                     send_gold_string += f"send **{realm}** gold to " \
-                                        f"**{dictionaries.bank_characters[x[0]].format('<:Horde:753970203452506132>', '<:Alliance:753970203402174494>')}**\n"
+                                        f"**{cfg.data['bank_characters'][x[0]].format('<:Horde:753970203452506132>', '<:Alliance:753970203402174494>')}**\n"
                     break
 
         send_gold_string += f"When the booking is done, type ``!done {self.id}`` to register the booking as complete " \

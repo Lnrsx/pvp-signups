@@ -47,10 +47,10 @@ class PvpSignups(commands.Bot):
             request_message = await Booking.request_channel.send(f"React with {cfg.settings['twos_emoji']} to create a 2v2 booking or {cfg.settings['threes_emoji']} to create a 3v3 booking")
             await request_message.add_reaction(cfg.settings['twos_emoji'])
             await request_message.add_reaction(cfg.settings['threes_emoji'])
-            cfg.set("request_booking_message_id", request_message.id)
+            cfg.cfgset("request_booking_message_id", request_message.id)
             await Booking.load(self)
         except exceptions.InvalidTokenResponse:
-            cfg.set("auto_faction_class_input", False)
+            cfg.cfgset("auto_faction_class_input", False)
             logger.warning("Bot could not get a blizzard API access token, automatic faction/class input has been disabled")
 
         logger.info("Bot is ready")
