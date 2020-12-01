@@ -15,6 +15,7 @@ class ConfigManager:
             logger.error("No config file detected")
             exit()
         self.data = {**json.load(open("data/data.json", "r"))}
+        self.pricing = {**json.load(open("data/pricing.json", "r"))}
 
     def cfgset(self, key, value):
         if key in self.settings.keys():
