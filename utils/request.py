@@ -122,8 +122,8 @@ class Request(object):
             elif type(response[0]) == discord.reaction.Reaction and str(response[0]) != '❌':
                 return str(response[0])
         if booking.status == 0:
-            await booking.author.send(embed=base_embed(f"Booking {booking.id} has been cancelled"))
-            await booking.delete()
+            await booking.author.send(embed=base_embed(f"Booking ``{booking.id}`` has been cancelled"))
+            booking.delete()
             raise exceptions.CancelBooking
         else:
             raise exceptions.RequestFailed("Request timed out")

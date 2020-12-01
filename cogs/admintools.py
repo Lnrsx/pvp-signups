@@ -21,7 +21,7 @@ class AdminTools(commands.Cog):
             booking_string = ''
             booking_string += f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n Boost info: '
             if b.status != 'compiling':
-                booking_string += f'``{b.bracket} {b.type} {b.rating}``\n'
+                booking_string += f'``{b.bracket} {b.type} {b.buyer.rating}``\n'
                 if b.status != 'posted':
                     booking_string += f'{"Boosters" if b.bracket == "3v3" else "Booster"}: '
                     booking_string += f'<@{b.booster.prim}> {f"and <@{b.booster.sec}>" if b.bracket == "3v3" else ""}'

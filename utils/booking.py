@@ -131,17 +131,14 @@ class Booking(object):
         """
         sheet = await sheets.grab_sheet()
         del sheet[0]
-        cachefields = [[
-            statuses[b.status], str(b.id), b.gold_realms or "N/A", b.booster.prim, str(b.boost_cut),
-            b.booster.sec or 'N/A', str(b.boost_cut_2), str(b.author.id), str(b.ad_cut),
-            str(b.price), str(b.author), 'Pending Booking Completion'] for b in cls.instances]
+        cachefields = [b.sheet_format() for b in cls.instances]
         not_on_sheet = [x for x in cachefields if x not in sheet and x[0] not in statuses[0:3]]
         not_in_cache = [x for x in sheet if x not in cachefields and x[0] not in statuses[4:]]
         if not_in_cache or not_on_sheet:
-            response = f"Sheet check completed - {len(not_on_sheet)} bookings found not on sheet, {len(not_in_cache)} bookings found not in cache"
+            response = f"Sheet check completed: {len(not_on_sheet)} booking(s) found not on sheet, {len(not_in_cache)} booking(s) found not in cache"
             logger.warning(response)
         else:
-            response = "Sheet check completed - Sheet is valid"
+            response = "Sheet check completed: Sheet is valid"
             logger.info(response)
         return response
 
@@ -261,7 +258,7 @@ class Booking(object):
                 await self.post_message.add_reaction(cfg.settings["schedule_emoji"])
                 return await self.pick_winner()
 
-            self.booster.sec, self.booster.prim_cut, self.booster.sec_cut = winner_message.mentions[0].id, self.booster.prim_cut / 2, self.booster.prim_cut / 2
+            self.booster.sec, self.booster.prim_cut, self.booster.sec_cut = winner_message.mentions[0].id, self.booster.prim_cut // 2, self.booster.prim_cut // 2
             await self.post_channel.send(embed=base_embed(f"<@{self.booster.sec}> has been picked as {winner_user.mention}'s teammate"))
 
         # post message is no longer relevent so is removed to save space in cache
@@ -284,10 +281,7 @@ class Booking(object):
 
         if self.status == 2:
             await self.get_gold_realms()
-            await sheets.add_pending_booking([
-                'Pending', self.id, self.gold_realms or "N/A", self.booster.prim, self.booster.prim_cut,
-                self.booster.sec or 'N/A', self.booster.sec_cut, str(self.author.id), str(self.booster.ad_cut),
-                str(self.price), str(self.author), self.attachment or 'Pending Booking Completion'])
+            await sheets.add_pending_booking(self.sheet_format())
 
             self.status = 3
 
@@ -295,14 +289,10 @@ class Booking(object):
         """Finds the booking instance by ID and updates the fields to the current instance attributes
 
         .. note::
-        If the booking does not yet exist on the sheet, call :meth:`upload` instead."""
+        If the booking does not yet exist on the sheet, call :meth:`upload` instead.
+        """
         sheet_booking = await sheets.get_pending_booking(self)
-        fields = [
-            statuses[self.status], self.id, self.gold_realms or "N/A", self.booster.prim, self.booster.prim_cut,
-            self.booster.sec or "N/A", self.booster.sec_cut, str(self.author.id), str(self.booster.ad_cut),
-            str(self.price), str(self.author), self.attachment or 'N/A']
-
-        for i, item in enumerate(fields):
+        for i, item in enumerate(self.sheet_format()):
             sheet_booking[i].value = item
 
         await sheets.update_booking(sheet_booking)
@@ -588,10 +578,10 @@ class Booking(object):
             await self.author.send(embed=base_embed("Request timed out"))
 
     def format_price_recommendation(self):
-        boost_cut_recommendation = self.price_recommendation * cfg.settings['booster_cut']
         if self.type == "Gladiator":
             return "``See glad pricing``"
         else:
+            boost_cut_recommendation = self.price_recommendation * cfg.settings['booster_cut']
             price_recommendation_string = f"{round(boost_cut_recommendation):,}g"
             if self.type == 'Hourly':
                 price_recommendation_string += "/hr"
@@ -613,6 +603,12 @@ class Booking(object):
 
     def authorized(self, user_id):
         return self.authorid == user_id
+    
+    def sheet_format(self):
+        return [
+            statuses[self.status], str(self.id), self.gold_realms or "N/A", str(self.booster.prim), str(self.booster.prim_cut),
+            str(self.booster.sec) or 'N/A', str(self.booster.sec_cut), str(self.author.id), str(self.booster.ad_cut),
+            str(self.price), str(self.author), self.attachment or 'Pending Booking Completion']
 
 
 class Buyer(object):
