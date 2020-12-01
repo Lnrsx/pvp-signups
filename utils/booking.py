@@ -300,6 +300,7 @@ class Booking(object):
         if self.boost_cut > 100000:
             for key in user_weights.keys():
                 if key == self.booster:
+                    # TODO move user_weights updating until real price is known
                     user_weights[key] = round(user_weights[key] - (self.boost_cut * cfg.settings["bad_luck_protection_mofifier"]), 2)
 
                 else:
@@ -344,25 +345,25 @@ class Booking(object):
         .. note::
         Only `Set rating` boosts can be partially refunded
         """
-        try:
-            if full:
-                self.status = 4
-            else:
-                assert self.type != 'set rating', "Only set rating boosts can be partially refunded"
-                refund_modifier = await self.refund_rating()
+        if full:
+            self.status = 4
+        else:
+            try:
+                assert self.type == 'Set rating', "Only set rating boosts can be partially refunded"
+                self.price = await self.refund_price()
                 assert await self.get_attachment_link(), "Request timed out"
-                self.price //= refund_modifier
-                self.boost_cut //= refund_modifier
-                self.boost_cut_2 //= refund_modifier
-                self.ad_cut //= refund_modifier
-                self.management_cut //= refund_modifier
-
-            await self.update_sheet()
-            self.cache()
-            await self._status_update()
-            self.delete()
-        except AssertionError as e:
-            raise exceptions.RequestFailed(str(e))
+            except AssertionError as e:
+                raise exceptions.RequestFailed(str(e))
+            self.boost_cut = self.price * cfg.settings["booster_cut"]
+            if self.booster_2:
+                self.boost_cut_2 = self.price * cfg.settings["booster_cut"]
+            self.ad_cut = self.price * cfg.settings["advertiser_cut"]
+            self.management_cut = self.price * cfg.settings["management_cut"]
+            self.status = 5
+        await self.update_sheet()
+        self.cache()
+        await self._status_update()
+        self.delete()
 
     async def complete(self):
         """Flags a booking as completed, once this happens it is deleted from the cache"""
@@ -590,42 +591,16 @@ class Booking(object):
                             "(you will be required to provide a screenshot of you sending the gold)"
         await self.author.send(embed=base_embed(send_gold_string))
 
-    async def refund_rating(self):
-        await self.author.send(embed=base_embed(
-            'Please respond with **the rating the buyer was at when the refund was issued**,\n'
-            'request will timeout in 5 minutes'))
-        try:
-
-            current_rating = await commands.Bot.wait_for(self.client, event='message', check=self._msg_check_wrapper(), timeout=300)
-            current_rating = current_rating.content
-            if current_rating.isnumeric():
-                self.price_recommendation = self.price - pricing.set_rating(self.bracket, self.rating.split("-")[0], int(current_rating))
-                await self.refund_price()
-
-            else:
-                await self.refund_rating()
-
-        except asyncio.TimeoutError:
-            await self.author.send(embed=base_embed("Request timed out"))
-
     async def refund_price(self) -> int:
-        if not self.price_recommendation:
-            raise exceptions.RequestFailed("Cannot get refund price when price recommendation is not known")
-        recommendation = f"{self.price_recommendation:,}"
-        await self.author.send(embed=base_embed(
-            'Please respond with **how much the buyer is getting refunded**,\n'
-            f'recommendation: **{recommendation}**g\n reqest will timout in 5 minutes'))
-        try:
-            refund_amount = await commands.Bot.wait_for(self.client, event='message', check=self._msg_check_wrapper(), timeout=300)
-        except asyncio.TimeoutError:
-            raise exceptions.RequestFailed("Request timed out")
-        refund_amount = refund_amount.content.replace(",", "").replace(".", "")
+        refund_amount = await self.client.request.react_message(self, "**the price of the boost** (after refund)", "")
+        refund_amount = refund_amount.replace(",", "").replace(".", "")
 
-        if refund_amount.isnumeric() and int(refund_amount) in range(0, self.price):
-            return (self.price - int(refund_amount)) / self.price
+        if refund_amount.isnumeric():
+            return int(refund_amount)
 
         else:
-            await self.refund_price()
+            await self.author.send("Unrecognized format, please try again")
+            return await self.refund_price()
 
     async def get_attachment_link(self):
         def attachment_check(message) -> bool:

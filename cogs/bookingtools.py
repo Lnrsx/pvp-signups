@@ -47,7 +47,7 @@ class Bookings(commands.Cog):
             assert amount.lower() in ['full', 'partial'], "Booking refund amount must be 'full' or 'partial'"
             booking = Booking.get(booking_id)
             assert booking.authorized(ctx.message.author.id), "You do not have permission to do that"
-            await booking.refund(ctx.message.author.id, True if amount == 'full' else False)
+            await booking.refund(full=True if amount == 'full' else False)
         except AssertionError as e:
             raise exceptions.RequestFailed(str(e))
 
