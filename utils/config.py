@@ -6,8 +6,6 @@ logger = get_logger("PvpSignups")
 
 
 class ConfigManager:
-    # TODO add handling for all data files
-    # TODO fix class_emotes occourances
     def __init__(self):
         if os.path.isfile("config.json"):
             self.settings = {**json.load(open("config.json", "r"))}
