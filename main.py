@@ -25,7 +25,6 @@ class PvpSignups(commands.Bot):
     -----------
     intents: :class:`discord.Intents`
         The intents used by the clients, set to discord's default intents settings.
-         player's ingame faction and class from the blizzard API servers
     """
     def __init__(self):
         intents = discord.Intents.default()
@@ -60,17 +59,16 @@ class PvpSignups(commands.Bot):
 
     def startup(self):
         """Performs the necessary checks on file integrity and loads cogs, must be called or the bot will not have any commands"""
-        if not os.path.isdir('data'):
-            os.mkdir("data")
-        for file in ['bookings.json', 'token.json']:
-            if not os.path.isfile(f'data/{file}'):
-                with open(f"data/{file}", "w") as f:
-                    json.dump({}, f)
-        if not os.path.isfile("data/serviceacct_spreadsheet.json"):
-            logger.error(
-                "No google service account creds detected,"
-                " go to https://gspread.readthedocs.io/en/latest/oauth2.html#for-bots-using-service-account and follow the instructions")
-            exit()
+        if cfg.debug:
+            for file in ['bookings.json', 'token.json']:
+                if not os.path.isfile(f'data/{file}'):
+                    with open(f"data/{file}", "w") as f:
+                        json.dump({}, f)
+            if not os.path.isfile("data/serviceacct_spreadsheet.json"):
+                logger.error(
+                    "No google service account creds detected,"
+                    " go to https://gspread.readthedocs.io/en/latest/oauth2.html#for-bots-using-service-account and follow the instructions")
+                exit()
         self.remove_command("help")
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
