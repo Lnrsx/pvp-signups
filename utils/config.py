@@ -6,6 +6,7 @@ logger = get_logger("PvpSignups")
 
 
 class ConfigManager:
+    # TODO add config validation
     def __init__(self):
         if os.path.isfile("config.json"):
             self.settings = {**json.load(open("config.json", "r"))}

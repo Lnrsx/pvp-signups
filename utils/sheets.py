@@ -74,6 +74,7 @@ class SheetManager:
         await sheet1.update_cells(booking_cells, value_input_option='USER_ENTERED')
 
     async def grab_sheet(self):
+        # TODO make this only grab relevant columns instead of whole worksheet
         """Gets all bookings from the sheet, used to validate sheet with internal cache"""
         sheet1 = await self.open_sheet()
         sheetinfo = await sheet1.get_all_values()
