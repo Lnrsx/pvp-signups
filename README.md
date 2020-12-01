@@ -52,10 +52,10 @@
   Once the bot and the necessary dependencies have been installed, find `config.json.example` in the root directory and remove the `.example`,
   then fill in the following fields **without removing any speech marks in the config file**:
   * `discord_token` -
-    The token for your discord application, it can be found [`here`](https://discord.com/developers/applications/)
-    (instructions on creating an application can be found [`here`](https://discordpy.readthedocs.io/en/latest/discord.html))
+    The token for your discord application, it can be found [**here**](https://discord.com/developers/applications/)
+    (instructions on creating an application can be found [**here**](https://discordpy.readthedocs.io/en/latest/discord.html))
   * `wowapi_id` -
-    The ID for your blizzard API client - they can be created [`here`](https://develop.battle.net/access/clients)
+    The ID for your blizzard API client - they can be created [**here**](https://develop.battle.net/access/clients)
   * `wowapi_secret` -
     The blizzard API secret is found under the client ID
   * `guild_id` -
@@ -71,7 +71,7 @@
     Emojis the bot will use, if you want to use unicode emojis, provide the C/C++/Java source code versions.
     If you want, you can message me on discord at `Lunarus#0936` for an invite to the server that has all the emojis the bot uses
   * `google_sheet_id` -
-    The ID for the google sheet that bookings will be posted to ([`this`](https://i.imgur.com/Hs9xxQw.png) bit)
+    The ID for the google sheet that bookings will be posted to ([**this**](https://i.imgur.com/Hs9xxQw.png) bit)
   * `worksheet_index` -
     Which worksheet the bookings will be posted to (starting from 0) 
     *make sure you check this or the bot could start posting bookings in the wrong sheet*
