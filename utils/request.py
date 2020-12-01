@@ -19,8 +19,6 @@ class Request(object):
 
     Attributes
     -----------
-    client: :class:`PvpSignups`
-        The client of the bot.
     token_cache: :class:`dict`
         The cache for access tokens, before any access token request the cache is checked to see
         if the last token retrieved is still valid and that one is used instead.
@@ -28,8 +26,7 @@ class Request(object):
         A dictionary containing all of the URLs for any server that access tokens need to be gotten from,
          currently only being used for the blizzard api server.
     """
-    def __init__(self, client):
-        self.client = client
+    def __init__(self):
         self.token_cache = json.load(open("data/token.json", "r"))
         self.fields = {'wowapi': f"https://{cfg.settings['wowapi_id']}:{cfg.settings['wowapi_secret']}@eu.battle.net/oauth/token"}
     
@@ -83,7 +80,8 @@ class Request(object):
                 else:
                     return {'status': response.status}
 
-    async def react_message(self, booking, buyerinfo, reactions, timeout=300):
+    @staticmethod
+    async def react_message(booking, buyerinfo, reactions, timeout=300):
         """Used to get information for the booking author in message or reaction form
 
         Parameters
@@ -109,8 +107,8 @@ class Request(object):
             await local_embed.add_reaction(x)
 
         pending_response = [
-            commands.Bot.wait_for(self.client, event='reaction_add', check=reaction_check),
-            commands.Bot.wait_for(self.client, event='message', check=message_check)
+            commands.Bot.wait_for(booking.client, event='reaction_add', check=reaction_check),
+            commands.Bot.wait_for(booking.client, event='message', check=message_check)
         ]
         done_tasks, pending_responses = await asyncio.wait(pending_response, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
         for task in pending_responses:
@@ -130,7 +128,8 @@ class Request(object):
         else:
             raise exceptions.RequestFailed("Request timed out")
 
-    async def react(self, booking, reactions, description):
+    @staticmethod
+    async def react(booking, reactions, description):
         """Same function as react_message but only works with reaction, also has no timeout"""
         def check(reaction, user):
             return (str(reaction.emoji) in reactions or ['❌']) and (booking.author.id == user.id) and (reaction.message.id == embed.id)
@@ -142,7 +141,7 @@ class Request(object):
         await embed.add_reaction('❌')
 
         try:
-            response = await commands.Bot.wait_for(self.client, event='reaction_add', check=check)
+            response = await commands.Bot.wait_for(booking.client, event='reaction_add', check=check)
         except asyncio.TimeoutError:
             await booking.cancel()
 
@@ -150,3 +149,6 @@ class Request(object):
             return response[0].emoji
         else:
             await booking.cancel()
+
+
+request = Request()

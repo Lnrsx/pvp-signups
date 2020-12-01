@@ -1,5 +1,5 @@
 from utils.misc import get_logger, base_embed
-from utils.request import Request
+from utils.request import request
 from utils.booking import Booking
 from utils import exceptions
 from utils.config import cfg
@@ -22,14 +22,11 @@ class PvpSignups(commands.Bot):
     -----------
     intents: :class:`discord.Intents`
         The intents used by the clients, set to discord's default intents settings.
-    request: :class:`Request`
-        The class used to make HTTP requests, currently only being used to get a
          player's ingame faction and class from the blizzard API servers
     """
     def __init__(self):
         intents = discord.Intents.default()
         super().__init__(command_prefix=cfg.settings['command_prefix'], intents=intents)
-        self.request = Request(self)
         self.startup()
 
     async def on_ready(self):
@@ -37,7 +34,7 @@ class PvpSignups(commands.Bot):
             await Booking.load(self)
 
             if cfg.settings['auto_faction_class_input']:
-                await self.request.token('wowapi')
+                await request.token('wowapi')
             else:
                 logger.info("Automatic faction and class input is disabled")
 
