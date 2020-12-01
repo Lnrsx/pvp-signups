@@ -24,7 +24,7 @@ class AdminTools(commands.Cog):
                 booking_string += f'``{b.bracket} {b.type} {b.rating}``\n'
                 if b.status != 'posted':
                     booking_string += f'{"Boosters" if b.bracket == "3v3" else "Booster"}: '
-                    booking_string += f'<@{b.booster}> {f"and <@{b.booster_2}>" if b.bracket == "3v3" else ""}'
+                    booking_string += f'<@{b.booster.prim}> {f"and <@{b.booster.sec}>" if b.bracket == "3v3" else ""}'
                 else:
                     booking_string += 'Booster: ``N/A``\n'
             else:
