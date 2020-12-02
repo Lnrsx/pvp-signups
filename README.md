@@ -13,11 +13,11 @@
  ## Commands
  
  * **Booking Commands** (Requires booking author)
-    * `!refund <amount> <booking id>` (Requires booking author)<br />
+    * `!refund <amount> <booking id>`<br />
     Flags a booking as refunded `<amount>` can either be `full` or `partial`.
-    * `!done <booking id>` (Requires booking author)<br />
+    * `!done <booking id>`<br />
     Flags a booking as completed
-    * `!setgoldrealm <booking id>` (Requires booking author)<br />
+    * `!setgoldrealm <booking id>`<br />
     Changes the listed gold realms of a booking
  * **Admin BLP Commands** (Requires Administrator)
     * `!blp <user>`<br />
