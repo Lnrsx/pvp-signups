@@ -636,6 +636,9 @@ class Buyer(object):
         self.spec = None
         self.rating = None
 
+    def __repr__(self):
+        return f"Name={self.name}-{self.realm} Faction={self.faction} Spec={self.spec} {self.class_} Rating={self.rating}"
+
 
 class Booster(object):
     """ Represents information about boosters and cuts of a booking
