@@ -66,7 +66,7 @@
     The ID for the channel that will contain the message used to create bookings
   * `request_booking_message_id` -
     The ID for the message that will advertisers will react to to create a booking 
-    *if you do not provide one the bot will automatically create a message and save the ID*
+    **if you do not provide one the bot will automatically create a message and save the ID**
   * `horde_emoji, alliance_emoji, choose_faction_emoji` -
     Emojis the bot will use, if you want to use unicode emojis, provide the C/C++/Java source code versions.
     If you want, you can message me on discord at `Lunarus#0936` for an invite to the server that has all the emojis the bot uses
