@@ -130,10 +130,9 @@ class Booking(object):
         If the format bookings are loaded to the sheet is changed, this function's code must be updated
         """
         sheet = await sheets.grab_sheet()
-        del sheet[0]
         cachefields = [b.sheet_format() for b in cls.instances]
         not_on_sheet = [x for x in cachefields if x not in sheet and x[0] not in statuses[0:3]]
-        not_in_cache = [x for x in sheet if x not in cachefields and x[0] not in statuses[4:]]
+        not_in_cache = [x for x in sheet[:12] if x not in cachefields and x[0] not in statuses[4:]]
         if not_in_cache or not_on_sheet:
             response = f"Sheet check completed: {len(not_on_sheet)} booking(s) found not on sheet, {len(not_in_cache)} booking(s) found not in cache"
             logger.warning(response)
