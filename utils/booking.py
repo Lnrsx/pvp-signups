@@ -601,7 +601,8 @@ class Booking(object):
         return message_check
 
     def authorized(self, user_id):
-        return self.authorid == user_id
+        if self.authorid != user_id:
+            raise exceptions.RequestFailed("You are not authorized to do that")
     
     def sheet_format(self):
         return [
