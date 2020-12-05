@@ -621,12 +621,6 @@ class Booking(object):
     async def _status_update(self):
         await self.author.send(embed=base_embed(f"Booking ``{self.id}`` has been set to ``{statuses[self.status]}``"))
 
-    def _msg_check_wrapper(self) -> bool:
-        def message_check(message):
-            # checks if the message is in the dm channel of the message author and is from the message author
-            return message.post_channel.id == self.author.dm_channel.id and message.author == self.author
-        return message_check
-
     def authorized(self, user_id):
         if self.authorid != user_id:
             raise exceptions.RequestFailed("You are not authorized to do that")

@@ -81,7 +81,7 @@ class Request(object):
                     return {'status': response.status}
 
     @staticmethod
-    async def react_message(booking, buyerinfo, reactions, timeout=300):
+    async def react_message(booking, buyerinfo, reactions, timeout=300, custom_message=None, custom_react=None):
         """Used to get information for the booking author in message or reaction form
 
         Parameters
@@ -94,6 +94,10 @@ class Request(object):
             A list of the reactions that will be added to the message
         timeout: :class:`int`
             Time in seconds to wait for a response before raising :class:`RequestFailed` (or :class:`CancelBooking`)
+        custom_message: :class:`predicate`
+            A custom check for the message response
+        custom_react: :class:`predicate`
+            A custom check for the reaction response
         """
         local_embed = await booking.author.send(embed=base_embed(f'Please respond with {buyerinfo}'))
 
@@ -107,8 +111,8 @@ class Request(object):
             await local_embed.add_reaction(x)
 
         pending_response = [
-            commands.Bot.wait_for(booking.client, event='reaction_add', check=reaction_check),
-            commands.Bot.wait_for(booking.client, event='message', check=message_check)
+            commands.Bot.wait_for(booking.client, event='reaction_add', check=custom_react or reaction_check),
+            commands.Bot.wait_for(booking.client, event='message', check=custom_message or message_check)
         ]
         done_tasks, pending_responses = await asyncio.wait(pending_response, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
         for task in pending_responses:
