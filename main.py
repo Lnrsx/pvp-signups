@@ -14,6 +14,7 @@ import os
 import sys
 import traceback
 import json
+from inspect import Parameter
 
 logger = get_logger('PvpSignups')
 
@@ -75,14 +76,16 @@ class PvpSignups(commands.Bot):
                 self.load_extension(f'cogs.{filename[:-3]}')
 
     @staticmethod
-    def shutdown(force=False):
-        if not force and [b for b in Booking.instances if b.status in range(0, 3)]:
-            raise exceptions.RequestFailed("It is unsafe to shutdown")
-        logger.info("Beginning shutdown...")
+    async def shutdown():
+        if [b for b in Booking.instances if b.status in range(0, 3)]:
+            logger.warning("it is not safe to shut down")
+            return
         for booking in Booking.instances:
-            booking.cache()
-            if booking.status == 0:
-                booking.author.send(embed=base_embed("I am being shut down, please hold until I come back online"))
+            if booking.status not in range(0, 3):
+                booking.cache()
+            else:
+                await booking.author.send(embed=base_embed("I am being shut down, you will need to make the booking again when i come back online"))
+                booking.cache()
         logger.info("All bookings have been cached, shutting down")
         exit()
 
@@ -97,19 +100,32 @@ class PvpSignups(commands.Bot):
             return
 
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("Missing Argument")
+            await ctx.send(f"Missing Argument, usage: {self.cmd_usage_string(ctx.command)}")
 
         elif isinstance(error, commands.BadArgument):
-            await ctx.send("Invalid Argument")
+            await ctx.send(f"Invalid Argument, usage: {self.cmd_usage_string(ctx.command)}")
 
         elif isinstance(error, exceptions.RequestFailed):
             logger.warning(f"Command request raised an exception: {error}")
             await ctx.send(embed=base_embed(str(error)))
 
+        elif isinstance(error, KeyboardInterrupt):
+            await self.shutdown()
+
         else:
             await ctx.send(error)
             logger.error(error)
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+
+    def cmd_usage_string(self, command: discord.ext.commands.Command):
+        command_string = f"{self.command_prefix}{command} "
+        for name, param in command.clean_params.items():
+            command_string += f"<{name.replace('_', ' ')}"
+            if param.default is not Parameter.empty and param.default is not None:
+                command_string += f": {param.default}> "
+                continue
+            command_string += '> '
+        return f"**{command_string}**"
 
 
 def main():
@@ -118,8 +134,6 @@ def main():
         bot.run(cfg.settings['discord_token'])
     except discord.LoginFailure:
         logger.error("Bot failed to log in, check discord token is valid in config.json")
-    except KeyboardInterrupt:
-        bot.shutdown(force=True)
 
 
 if __name__ == '__main__':

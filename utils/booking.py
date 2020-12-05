@@ -160,6 +160,17 @@ class Booking(object):
             return self._author.id
         return self._author
 
+    async def create(self):
+        try:
+            await self.compile()
+            await self.post()
+            await self.pick_winner()
+            await self.upload()
+            self.cache()
+
+        except exceptions.CancelBooking:
+            pass
+
     async def compile(self):
         """DMs the booking instance author questions about the booking they are creating,
         functions recursively call themselves until a valid input is given.
@@ -181,7 +192,7 @@ class Booking(object):
         embed.add_field(name='Boost type', value=f"``{self.type}``")
         embed.add_field(name='Booster cut', value=self.format_price_recommendation())
         embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.faction.lower() + '_emoji']}``{self.faction}``")
-        embed.add_field(name='Boost rating', value=f"``{self.rating}``")
+        embed.add_field(name='Boost rating', value=f"``{self.buyer.rating}``")
         embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer.class_][self.buyer_spec]}``{self.buyer_spec} {self.buyer.class_}``')
         embed.add_field(name='Notes', value=f"``{self.notes}``")
         embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
@@ -236,7 +247,7 @@ class Booking(object):
                       f' within {round(cfg.settings["teammate_pick_timeout"] / 60)} minutes or the booking will be rerolled' if self.bracket == '3v3' else ''
             await self.post_channel.send(
                 f"<@{self.booster.prim}> was picked for {self.author.display_name}'s "
-                f"``{self.bracket} {self.type} {self.rating}`` boost ({reactions['time']}){mention}")
+                f"``{self.bracket} {self.type} {self.buyer.rating}`` boost ({reactions['time']}){mention}")
 
         else:
             return False
@@ -358,7 +369,9 @@ class Booking(object):
             if obj.id == self.id:
                 del self.instances[i]
 
-    async def _get_boost_type(self):
+    async def _get_boost_type(self, force=False):
+        if not force and self.type:
+            return
         fields = '\n'.join(cfg.data['boost_types'] + cfg.data['bracket_boost_types'][self.bracket])
         boost_type = await request.react_message(
             self, f"the **boost type**, accepted respones:\n"
@@ -371,7 +384,9 @@ class Booking(object):
             await self.author.send('Boost type not recognised, please try again.')
             await self._get_boost_type()
 
-    async def _get_name_faction_class(self):
+    async def _get_name_faction_class(self, force=False):
+        if not force and [self.buyer.name, self.buyer.realm, self.buyer.faction, self.buyer.class_]:
+            return
         buyer_name = await request.react_message(
             self, '**buyers character name** (e.g. Mystikdruldk)'
                   '\nor react with ❌ to cancel the booking', '❌')
@@ -423,7 +438,9 @@ class Booking(object):
                 'or react with ❌ to cancel the booking')
             await self.manual_class_input()
 
-    async def manual_class_input(self):
+    async def manual_class_input(self, force=False):
+        if not force and self.buyer.class_:
+            return
         fields = '\n'.join(cfg.data['class_emotes'])
         buyer_class = await request.react_message(
             self, f'the **buyers class**, accepted responses:\n {fields}\n'
@@ -437,7 +454,9 @@ class Booking(object):
                 await self.author.send('Class not recognised, please try again.')
                 await self.manual_class_input()
 
-    async def _get_spec(self):
+    async def _get_spec(self, force=False):
+        if not force and self.buyer.spec:
+            return
         if not self.buyer.class_:
             raise exceptions.RequestFailed("Cannot get spec when class is not known")
         accepted_inputs_string = ''
@@ -458,7 +477,9 @@ class Booking(object):
 
             self.buyer_spec = buyer_spec
 
-    async def _get_rating_range(self):
+    async def _get_rating_range(self, force=False):
+        if not force and (self.buyer.rating, self.price_recommendation):
+            return
         if not self.type:
             raise exceptions.RequestFailed("Cannot get rating range when boost type is not known")
         if self.type == 'Set rating':
@@ -475,27 +496,29 @@ class Booking(object):
                 and not [x for x in boost_rating.split('-') if not x.isnumeric() or int(x) not in range(0, 2401)]\
                 and len(boost_rating.split('-')) == 2:
             start_rating, end_rating = int(boost_rating.split("-")[0]), int(boost_rating.split("-")[1])
-            self.rating = boost_rating
+            self.buyer.rating = boost_rating
             self.price_recommendation = pricing.set_rating(self.bracket, start_rating, end_rating)
 
         elif boost_rating.isnumeric() and int(boost_rating) in range(0, 3501):
             if self.type == '1 win':
-                self.rating = boost_rating
+                self.buyer.rating = boost_rating
                 self.price_recommendation = pricing.one_win(self.bracket, int(boost_rating))
 
             elif self.type == 'Gladiator':
-                self.rating = boost_rating
+                self.buyer.rating = boost_rating
                 self.price_recommendation = 'See glad pricing'
 
             else:
-                self.rating = boost_rating
+                self.buyer.rating = boost_rating
                 self.price_recommendation = pricing.hourly(self.bracket)
 
         else:
             await self.author.send("Rating format not recognised, please check your format and try again")
             await self._get_rating_range()
 
-    async def _get_price(self):
+    async def _get_price(self, force=False):
+        if not force and self.price:
+            return
         if not (self.type, self.price_recommendation):
             raise exceptions.RequestFailed("Cannot get price when boost type / price recommendation are not known")
         boost_price = await request.react_message(
@@ -516,13 +539,17 @@ class Booking(object):
             await self.author.send(str(e))
             await self._get_price()
 
-    async def _get_notes(self):
+    async def _get_notes(self, force=False):
+        if not force and self.notes:
+            return
         self.notes = await request.react_message(
             self, '**any additional notes** about the buyer, react with ⏩ to skip\n'
             'or react with ❌ to cancel the booking', ['⏩', '❌'])
         self.notes = 'N/A' if self.notes == '⏩' else self.notes
 
-    async def get_gold_realms(self):
+    async def get_gold_realms(self, force=False):
+        if force and self.gold_realms:
+            return
         self.gold_realms = await request.react_message(
             self, 'the **realm the gold was collected on**\n'
             'if gold was collected on multiple realms, specify all of them seperated by commas\n'

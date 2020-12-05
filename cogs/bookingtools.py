@@ -21,16 +21,8 @@ class Bookings(commands.Cog):
             bracket = '2v2' if reaction.emoji.name == cfg.settings["twos_emoji"] else '3v3'
             booking = Booking(bracket, author)
             message = await Booking.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
-            try:
-                await message.remove_reaction(reaction.emoji, author)
-                await booking.compile()
-                await booking.post()
-                await booking.pick_winner()
-                await booking.upload()
-                booking.cache()
-
-            except exceptions.CancelBooking:
-                pass
+            await message.remove_reaction(reaction.emoji, author)
+            await booking.create()
 
     @commands.command(description="Marks a booking as complete")
     async def done(self, ctx, booking_id):

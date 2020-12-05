@@ -3,7 +3,6 @@ import discord
 from utils.misc import base_embed
 from utils import exceptions
 from utils.booking import Booking, statuses
-from inspect import Parameter
 
 
 class AdminTools(commands.Cog):
@@ -40,14 +39,8 @@ class AdminTools(commands.Cog):
     async def help(self, ctx):
         embed = base_embed("", title="Commands:")
         for command in self.client.commands:
-            command_string = f"**{self.client.command_prefix}{command} "
-            for name, param in command.clean_params.items():
-                command_string += f"<{name.replace('_', ' ')}"
-                if param.default is not Parameter.empty and param.default is not None:
-                    command_string += f": {param.default}> "
-                    continue
-                command_string += '> '
-            command_string += f'**\n{command.description}' if command.description else ''
+            command_string = self.client.cmd_usage_string(command)
+            command_string += f'\n{command.description}' if command.description else ''
             embed.add_field(name='\u200b', value=command_string, inline=False)
         await ctx.send(embed=embed)
 
@@ -78,7 +71,7 @@ class AdminTools(commands.Cog):
         except AssertionError as e:
             raise exceptions.RequestFailed(str(e))
 
-    @commands.command()
+    @commands.command(description="Checks for differences between the interal booking cache and the sheet")
     @commands.has_permissions(administrator=True)
     async def validate(self, ctx):
         response = await Booking.validate()
