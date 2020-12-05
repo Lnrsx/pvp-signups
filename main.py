@@ -74,6 +74,18 @@ class PvpSignups(commands.Bot):
             if filename.endswith('.py'):
                 self.load_extension(f'cogs.{filename[:-3]}')
 
+    @staticmethod
+    def shutdown(force=False):
+        if not force and [b for b in Booking.instances if b.status in range(0, 3)]:
+            raise exceptions.RequestFailed("It is unsafe to shutdown")
+        logger.info("Beginning shutdown...")
+        for booking in Booking.instances:
+            booking.cache()
+            if booking.status == 0:
+                booking.author.send(embed=base_embed("I am being shut down, please hold until I come back online"))
+        logger.info("All bookings have been cached, shutting down")
+        exit()
+
     async def on_command_error(self, ctx, error):
         if hasattr(ctx.command, 'on_error'):
             return
@@ -106,6 +118,8 @@ def main():
         bot.run(cfg.settings['discord_token'])
     except discord.LoginFailure:
         logger.error("Bot failed to log in, check discord token is valid in config.json")
+    except KeyboardInterrupt:
+        bot.shutdown(force=True)
 
 
 if __name__ == '__main__':
