@@ -65,6 +65,7 @@ class Booking(object):
         self.type = None
         self.buyer = Buyer()
         self.price_recommendation = None
+        self.ad_price_estimate = None
         self.price = 0
         self.booster = Booster()
         self.attachment = None
@@ -179,6 +180,7 @@ class Booking(object):
         await self._get_name_faction_class()
         await self._get_spec()
         await self._get_rating_range()
+        await self._get_price_estimate()
         await self._get_notes()
 
     async def post(self):
@@ -385,7 +387,7 @@ class Booking(object):
             await self._get_boost_type()
 
     async def _get_name_faction_class(self, force=False):
-        if not force and [self.buyer.name, self.buyer.realm, self.buyer.faction, self.buyer.class_]:
+        if not force and self.buyer.name and self.buyer.realm and self.buyer.faction and self.buyer.class_:
             return
         buyer_name = await request.react_message(
             self, '**buyers character name** (e.g. Mystikdruldk)'
@@ -478,7 +480,7 @@ class Booking(object):
             self.buyer_spec = buyer_spec
 
     async def _get_rating_range(self, force=False):
-        if not force and (self.buyer.rating, self.price_recommendation):
+        if not force and self.buyer.rating and self.price_recommendation:
             return
         if not self.type:
             raise exceptions.RequestFailed("Cannot get rating range when boost type is not known")
@@ -516,13 +518,27 @@ class Booking(object):
             await self.author.send("Rating format not recognised, please check your format and try again")
             await self._get_rating_range()
 
+    async def _get_price_estimate(self):
+        price_estimate = await request.react_message(
+            self, f"the **estimated price of the boost, \n recommended price: **{self.price_recommendation:,}**g**\n**This is not the final price, just what is shown when the booking is posted**")
+        price_estimate = price_estimate.replace(",", "").replace(".", "")
+        try:
+            assert price_estimate.isnumeric(), 'Boost price must be a number, please try again.'
+            assert int(price_estimate) > 0, 'Boost price cannot be negative, please try again.'
+            self.ad_price_estimate = int(price_estimate)
+            return True
+
+        except AssertionError as e:
+            await self.author.send(str(e))
+            await self._get_price_estimate()
+
     async def _get_price(self, force=False):
         if not force and self.price:
             return
-        if not (self.type, self.price_recommendation):
+        if not self.type and self.price_recommendation:
             raise exceptions.RequestFailed("Cannot get price when boost type / price recommendation are not known")
         boost_price = await request.react_message(
-            self, f'the **total boost price**,\n recommended price: **{self.price_recommendation:,}**g', '')
+            self, f'the **total boost price**,\n estimated price: **{self.ad_price_estimate:,}**g', '')
         boost_price = boost_price.replace(",", "").replace(".", "")
 
         try:
@@ -607,6 +623,8 @@ class Booking(object):
         if self.type == "Gladiator":
             return "``See glad pricing``"
         else:
+            if not self.price_recommendation:
+                self.price_recommendation = 0
             boost_cut_recommendation = self.price_recommendation * cfg.settings['booster_cut']
             price_recommendation_string = f"{round(boost_cut_recommendation):,}g"
             if self.type == 'Hourly':
