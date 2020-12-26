@@ -81,7 +81,7 @@ class Request(object):
                     return {'status': response.status}
 
     @staticmethod
-    async def react_message(booking, buyerinfo, reactions, timeout=300, custom_message=None, custom_react=None):
+    async def react_message(booking, buyerinfo, reactions='', timeout=300, custom_message=None, custom_react=None):
         """Used to get information for the booking author in message or reaction form
 
         Parameters
