@@ -192,7 +192,7 @@ class Booking(object):
         embed.set_author(name=self.author.display_name, icon_url=self.author.avatar_url)
         embed.add_field(name='Buyer Name', value=f'[{self.buyer_name}-{self.buyer_realm}](https://check-pvp.fr/eu/{self.buyer_realm}/{self.buyer_name})')
         embed.add_field(name='Boost type', value=f"``{self.type}``")
-        embed.add_field(name='Booster cut', value=self.format_price_recommendation())
+        embed.add_field(name='Booster cut', value=self.format_price_estimate())
         embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.faction.lower() + '_emoji']}``{self.faction}``")
         embed.add_field(name='Boost rating', value=f"``{self.buyer.rating}``")
         embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer.class_][self.buyer_spec]}``{self.buyer_spec} {self.buyer.class_}``')
@@ -619,17 +619,17 @@ class Booking(object):
         except TimeoutError:
             await self.author.send(embed=base_embed("Request timed out"))
 
-    def format_price_recommendation(self):
+    def format_price_estimate(self):
         if self.type == "Gladiator":
             return "``See glad pricing``"
         else:
-            if not self.price_recommendation:
-                self.price_recommendation = 0
-            boost_cut_recommendation = self.price_recommendation * cfg.settings['booster_cut']
-            price_recommendation_string = f"{round(boost_cut_recommendation):,}g"
+            if not self.ad_price_estimate:
+                self.ad_price_estimate = 0
+            boost_cut_recommendation = self.ad_price_estimate * cfg.settings['booster_cut']
+            price_estimate_string = f"{round(boost_cut_recommendation):,}g"
             if self.type == 'Hourly':
-                price_recommendation_string += "/hr"
-            return f"``{price_recommendation_string}``"
+                price_estimate_string += "/hr"
+            return f"``{price_estimate_string}``"
 
     async def _recache_message(self):
         """Fetch the post message of the booking instance, used when the reaction on the message need to be rechecked"""
