@@ -19,7 +19,7 @@ class Blpcommands(commands.Cog):
         if bracket not in ['2v2', '3v3']:
             raise Exception("Invalid argument, bracket must be '2v2' or '3v3'")
 
-        members = [x for x in ctx.post_channel.members if x.bot is False]
+        members = [x for x in ctx.channel.members if x.bot is False]
         with open('data/userweights.json', 'r') as f:
             user_weights = json.load(f)[bracket]
         users = [x.display_name for x in members]
