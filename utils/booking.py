@@ -520,7 +520,7 @@ class Booking(object):
 
     async def _get_price_estimate(self):
         price_estimate = await request.react_message(
-            self, f"the **estimated price of the boost**, \n recommended price: **{self.price_recommendation:,}\n**This is not the final price, just what is shown when the booking is posted**")
+            self, f"the **estimated price of the boost**, \n recommended price: **{self.price_recommendation:,}\nThis is not the final price, just what is shown when the booking is posted")
         price_estimate = price_estimate.replace(",", "").replace(".", "")
         try:
             assert price_estimate.isnumeric(), 'Boost price must be a number, please try again.'
