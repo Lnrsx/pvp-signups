@@ -190,12 +190,12 @@ class Booking(object):
             description='**ID:** ``{}``'.format(self.id),
             colour=discord.Colour.purple())
         embed.set_author(name=self.author.display_name, icon_url=self.author.avatar_url)
-        embed.add_field(name='Buyer Name', value=f'[{self.buyer_name}-{self.buyer_realm}](https://check-pvp.fr/eu/{self.buyer_realm}/{self.buyer_name})')
+        embed.add_field(name='Buyer Name', value=f'[{self.buyer.name}-{self.buyer.realm}](https://check-pvp.fr/eu/{self.buyer.realm}/{self.buyer.name})')
         embed.add_field(name='Boost type', value=f"``{self.type}``")
         embed.add_field(name='Booster cut', value=self.format_price_estimate())
-        embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.faction.lower() + '_emoji']}``{self.faction}``")
+        embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.buyer.faction.lower() + '_emoji']}``{self.buyer.faction}``")
         embed.add_field(name='Boost rating', value=f"``{self.buyer.rating}``")
-        embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer.class_][self.buyer_spec]}``{self.buyer_spec} {self.buyer.class_}``')
+        embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer.class_][self.buyer.spec]}``{self.buyer.spec} {self.buyer.class_}``')
         embed.add_field(name='Notes', value=f"``{self.notes}``")
         embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
         self.post_message = await self.post_channel.send(embed=embed)
@@ -236,8 +236,8 @@ class Booking(object):
 
             weight_file = json.load(open(f'data/userweights.json', 'r'))
             user_weights = weight_file[self.bracket]
-            for user in list(set(user_weights.keys()).difference(set(reactions["users"]))):
-                user_weights[user] = 1
+            for user in [x for x in reactions["users"] if x not in user_weights.keys()]:
+                user_weights[str(user)] = 1
 
             self.booster.prim = random.choices(
                 population=reactions["users"],
@@ -293,9 +293,8 @@ class Booking(object):
 
         if self.status == 2:
             await self.get_gold_realms()
-            await sheets.add_pending_booking(self.sheet_format())
-
             self.status = 3
+            await sheets.add_pending_booking(self.sheet_format())
 
     async def update_sheet(self) -> bool:
         """Finds the booking instance by ID and updates the fields to the current instance attributes
@@ -400,9 +399,9 @@ class Booking(object):
             response = await request.get(
                 f'https://eu.api.blizzard.com/profile/wow/character/{buyer_realm.lower()}/{buyer_name.lower()}?namespace=profile-eu&locale=en_GB', token=True)
             if response['status'] == 200:
-                self.faction, self.buyer.class_ = response['body']['faction']['name'], response['body']['character_class']['name'].capitalize()
-                self.buyer_name = buyer_name
-                self.buyer_realm = buyer_realm
+                self.buyer.faction, self.buyer.class_ = response['body']['faction']['name'], response['body']['character_class']['name'].capitalize()
+                self.buyer.name = buyer_name
+                self.buyer.realm = buyer_realm
 
             elif response['status'] == 404:
                 character_not_found_response = await request.react(
@@ -417,7 +416,7 @@ class Booking(object):
                         self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                         'React with the **buyers faction**\n'
                         'or react with ❌ to cancel the booking')
-                    self.faction = faction_response.name
+                    self.buyer.faction = faction_response.name
                     await self.manual_class_input()
 
                 if str(character_not_found_response) == '🔁':
@@ -428,13 +427,13 @@ class Booking(object):
                     "**Unexpected error occoured trying to find a player with that name-realm**,"
                     " you can either input the buyers faction and class manually "
                     f"{cfg.settings['choose_faction_emoji']}, or cancel the booking (❌)."))
-                self.faction = await request.react(
+                self.buyer.faction = await request.react(
                     self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                     'React with the **buyers faction**\n'
                     'or react with ❌ to cancel the booking')
                 await self.manual_class_input()
         else:
-            self.faction = await request.react(
+            self.buyer.faction = await request.react(
                 self, [cfg.settings["horde_emoji"], cfg.settings["alliance_emoji"]],
                 'React with the **buyers faction**\n'
                 'or react with ❌ to cancel the booking')
@@ -477,7 +476,7 @@ class Booking(object):
             if buyer_spec in list(cfg.data['specs_abbreviations'][self.buyer.class_].keys()):
                 buyer_spec = cfg.data['specs_abbreviations'][self.buyer.class_][buyer_spec]
 
-            self.buyer_spec = buyer_spec
+            self.buyer.spec = buyer_spec
 
     async def _get_rating_range(self, force=False):
         if not force and self.buyer.rating and self.price_recommendation:
@@ -496,7 +495,7 @@ class Booking(object):
 
         if self.type == 'Set rating'\
                 and not [x for x in boost_rating.split('-') if not x.isnumeric() or int(x) not in range(0, 2401)]\
-                and len(boost_rating.split('-')) == 2:
+                and len(boost_rating.split('-')) == 2 and int(boost_rating.split("-")[0]) < int(boost_rating.split("-")[1]):
             start_rating, end_rating = int(boost_rating.split("-")[0]), int(boost_rating.split("-")[1])
             self.buyer.rating = boost_rating
             self.price_recommendation = pricing.set_rating(self.bracket, start_rating, end_rating)
@@ -520,7 +519,7 @@ class Booking(object):
 
     async def _get_price_estimate(self):
         price_estimate = await request.react_message(
-            self, f"the **estimated price of the boost**, \n recommended price: **{self.price_recommendation:,}\nThis is not the final price, just what is shown when the booking is posted")
+            self, f"the **estimated price of the boost**, \n recommended price: **{self.price_recommendation:,}**\nThis is not the final price, just what is shown when the booking is posted", '❌')
         price_estimate = price_estimate.replace(",", "").replace(".", "")
         try:
             assert price_estimate.isnumeric(), 'Boost price must be a number, please try again.'
