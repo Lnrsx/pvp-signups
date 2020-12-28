@@ -43,7 +43,7 @@ class Bookings(commands.Cog):
         booking = Booking.get(booking_id)
         booking.authorized(ctx.message.author.id)
         await booking.get_gold_realms()
-        if booking.status in range(3, 7):
+        if booking.status in range(3, 8):
             await booking.update_sheet()
 
 

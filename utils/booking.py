@@ -15,7 +15,7 @@ import jsonpickle
 import random
 
 logger = get_logger("PvpSignups")
-statuses = ['Compiling', 'Posted', 'Pending (not uploaded)', 'Pending', 'Refund', 'Partial refund', 'Complete']
+statuses = ['Compiling', 'Posted', 'Pending (not uploaded)', 'Pending', 'Refund', 'Partial refund', 'Complete', 'Untaken']
 
 
 class Booking(object):
@@ -52,7 +52,7 @@ class Booking(object):
     post_message: Optional[:class:`discord.Message`]
         The message that was posted about the booking in the designated post_bookings channel. Could be None.
     """
-    instances, post_channel, request_channel = [], None, None
+    instances, post_channel, request_channel, untaken_channel, untaken_message = [], None, None, None, None
 
     def __init__(self, bracket, author: discord.User):
         self.__class__.instances.append(self)
@@ -91,12 +91,18 @@ class Booking(object):
             cls.request_channel = commands.Bot.get_channel(cls.client, cfg.settings["request_booking_channel_id"])
         if cls.post_channel is None:
             cls.post_channel = commands.Bot.get_channel(cls.client, cfg.settings["post_booking_channel_id"])
-        if not cls.request_channel or not cls.post_channel:
+        if cls.untaken_channel is None:
+            cls.untaken_channel = commands.Bot.get_channel(cls.client, cfg.settings["untaken_boosts_channel_id"])
+        if not cls.request_channel or not cls.post_channel or not cls.untaken_channel:
             raise exceptions.ChannelNotFound
         try:
             await cls.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
         except discord.NotFound:
-            raise exceptions.MessageNotFound
+            raise exceptions.MessageNotFound("request_message")
+        try:
+            cls.untaken_message = await cls.untaken_channel.fetch_message(cfg.settings["untaken_boosts_message_id"])
+        except discord.NotFound:
+            raise exceptions.MessageNotFound("untaken_message")
         with open("data/bookings.json", "r") as f:
             cache = json.load(f)
             for _instance in cache.values():
@@ -139,6 +145,21 @@ class Booking(object):
             response = "Sheet check completed: Sheet is valid"
             logger.info(response)
         return response
+
+    @classmethod
+    async def update_untaken_boosts(cls):
+        embed = base_embed("", title="Untaken boosts")
+        for b in cls.instances:
+            if b.status == 7:
+                booking_string = f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n ' \
+                                 f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}``\n ' \
+                                 f'Buyer name: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm}/{b.buyer.name})\n' \
+                                 f'Buyer info: {cfg.settings[b.buyer.faction.lower() + "_emoji"]}``{b.buyer.faction}`` ' \
+                                 f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}``{b.buyer.spec} {b.buyer.class_}``'
+                embed.add_field(name=f"\n\u200b\nID: ``{b.id}``", value=booking_string, inline=False)
+        if not embed.fields:
+            embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
+        await cls.untaken_message.edit(embed=embed)
 
     @property
     def author(self) -> discord.User:
@@ -190,7 +211,7 @@ class Booking(object):
         embed.set_author(name=self.author.display_name, icon_url=self.author.avatar_url)
         embed.add_field(name='Buyer Name', value=f'[{self.buyer.name}-{self.buyer.realm}](https://check-pvp.fr/eu/{self.buyer.realm}/{self.buyer.name})')
         embed.add_field(name='Boost type', value=f"``{self.type}``")
-        embed.add_field(name='Booster cut', value=self.format_price_estimate())
+        embed.add_field(name='Est. booster cut', value=self.format_price_estimate())
         embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.buyer.faction.lower() + '_emoji']}``{self.buyer.faction}``")
         embed.add_field(name='Boost rating', value=f"``{self.buyer.rating}``")
         embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer.class_][self.buyer.spec]}``{self.buyer.spec} {self.buyer.class_}``')
@@ -227,10 +248,13 @@ class Booking(object):
                 reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "schedule"}
 
                 if not reactions["users"]:
-                    await self.post_channel.send(embed=base_embed(f'No users signed up to booking ``{self.id}``'))
-                    await self.author.send(embed=base_embed(f"Booking ``{self.id}`` was cancelled due to no users signing up"))
-                    self.delete()
-                    raise exceptions.CancelBooking
+                    await self.post_channel.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
+                    await self.author.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
+                    self.status = 7
+                    self.post_message = None
+                    self.cache()
+                    await self.update_untaken_boosts()
+                    raise exceptions.BookingUntaken
 
             weight_file = json.load(open(f'data/userweights.json', 'r'))
             user_weights = weight_file[self.bracket]

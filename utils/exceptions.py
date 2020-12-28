@@ -24,3 +24,7 @@ class InvalidTokenResponse(SignupsException):
 
 class RequestFailed(SignupsException):
     """An action the user has requested has failed, class paramater is sent back to the user as str."""
+
+
+class BookingUntaken(SignupsException):
+    """Booking was not taken and will be moved to the untaken boosts board"""

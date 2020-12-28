@@ -1,2 +1,3 @@
-2020-12-28 12:38:03,837:INFO:PvpSignups: 2 booking(s) have been loaded from the cache
-2020-12-28 12:38:03,837:INFO:PvpSignups: Bot is ready
+2020-12-28 19:08:57,611:WARNING:PvpSignups: No valid untaken message was found in the untaken booking channel, automatically creating...
+2020-12-28 19:08:58,370:INFO:PvpSignups: 4 booking(s) have been loaded from the cache
+2020-12-28 19:08:58,554:INFO:PvpSignups: Bot is ready
