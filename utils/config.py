@@ -33,7 +33,7 @@ class DataManager:
         if key in self.settings.keys():
             self.settings[key] = value
             with open("config.json", "w") as f:
-                json.dump(self.settings, f)
+                json.dump(self.settings, f, indent=4)
             return True
 
         else:
