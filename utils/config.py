@@ -47,7 +47,6 @@ class DataManager:
                 assert self.settings["wowapi_id"] != "YOUR_WOWAPI_ID", "a wowapi ID"
                 assert self.settings["wowapi_secret"] != "YOUR_WOWAPI_SECRET", "a wowapi secret"
             assert self.settings["guild_id"] != 0, "a guild ID"
-            assert self.settings["google_sheet_id"] != "YOUR_GOOGLE_SHEET_ID", "a google sheet id"
             return True
         except AssertionError as e:
             logger.error(f"Setting in config file invalid: you must provide {e}")

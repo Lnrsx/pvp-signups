@@ -73,12 +73,6 @@ class AdminTools(commands.Cog):
         except AssertionError as e:
             raise exceptions.RequestFailed(str(e))
 
-    @commands.command(description="Checks for differences between the interal booking cache and the sheet")
-    @commands.has_permissions(administrator=True)
-    async def validate(self, ctx):
-        response = await Booking.validate()
-        await ctx.send(embed=base_embed(response))
-
 
 def setup(client):
     client.add_cog(AdminTools(client))

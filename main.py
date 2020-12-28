@@ -73,11 +73,6 @@ class PvpSignups(commands.Bot):
                 if not os.path.isfile(f'data/{file}'):
                     with open(f"data/{file}", "w") as f:
                         json.dump({}, f)
-            if not os.path.isfile("data/serviceacct_spreadsheet.json"):
-                logger.error(
-                    "No google service account creds detected,"
-                    " go to https://gspread.readthedocs.io/en/latest/oauth2.html#for-bots-using-service-account and follow the instructions")
-                exit()
         self.remove_command("help")
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):

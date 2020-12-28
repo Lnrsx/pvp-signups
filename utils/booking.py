@@ -185,7 +185,6 @@ class Booking(object):
             await self.compile()
             await self.post()
             await self.pick_winner()
-            await self.upload()
             self.cache()
 
         except exceptions.CancelBooking:
@@ -304,30 +303,6 @@ class Booking(object):
                     user_weights[key] = round(user_weights[key] + (self.booster.prim_cut * cfg.settings["bad_luck_protection_mofifier"]), 2)
         self.status = 2
 
-    async def upload(self):
-        """Uploads the booking instance to the external google sheet.
-
-        .. note::
-        If the booking is already uploaded, call :meth:`update_sheet` instead.
-        """
-
-        if self.status == 2:
-            await self.get_gold_realms()
-            self.status = 3
-            await sheets.add_pending_booking(self.sheet_format())
-
-    async def update_sheet(self) -> bool:
-        """Finds the booking instance by ID and updates the fields to the current instance attributes
-
-        .. note::
-        If the booking does not yet exist on the sheet, call :meth:`upload` instead.
-        """
-        sheet_booking = await sheets.get_pending_booking(self)
-        for i, item in enumerate(self.sheet_format()):
-            sheet_booking[i].value = item
-
-        await sheets.update_booking(sheet_booking)
-
     async def refund(self, full=True):
         """Either partially or fully refunds a booking and updating the sheet version with the new infomation
 
@@ -344,7 +319,6 @@ class Booking(object):
             except AssertionError as e:
                 raise exceptions.RequestFailed(str(e))
             self.booster.update_price(self.price)
-        await self.update_sheet()
         self.cache()
         await self._status_update()
         self.delete()
@@ -357,7 +331,6 @@ class Booking(object):
             assert await self._get_price(), "Request timed out"
             self.status = 6
             await self._status_update()
-            await self.update_sheet()
             self.delete()
         except AssertionError as e:
             raise exceptions.RequestFailed(str(e))
