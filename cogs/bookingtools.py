@@ -1,7 +1,9 @@
+import discord
 from discord.ext import commands
 from utils.booking import Booking
 from utils import exceptions
 from utils.config import cfg
+from utils.misc import base_embed
 
 
 class Bookings(commands.Cog):
@@ -23,6 +25,29 @@ class Bookings(commands.Cog):
             message = await Booking.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
             await message.remove_reaction(reaction.emoji, author)
             await booking.create()
+
+    @commands.command(description="Take an untaken boost, must be in the untaken boosts channel")
+    async def take(self, ctx, booking_id, partner: discord.User = None):
+        if not ctx.channel == Booking.untaken_channel:
+            return
+
+        await ctx.message.delete()
+        booking = Booking.get(booking_id)
+        if booking.status != 7:
+            await ctx.message.author.send(embed=base_embed("That booking is not Untaken"))
+            return
+        booking.booster.prim = ctx.message.author.id
+        if booking.bracket == "3v3":
+            if partner:
+                booking.booster.sec = partner.id
+            else:
+                await ctx.message.author.send(embed=base_embed("You must mention a teammate for a 3v3 booking"))
+                return
+        await booking.author.send(embed=base_embed(f"You booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm} {booking.bracket} {booking.type} {booking.buyer.rating}``"
+                                                   f"\n has been claimed by {ctx.message.author.display_name}"))
+        await ctx.message.author.send(embed=base_embed(f"You have claimed booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm}`` ``{booking.bracket} {booking.type} {booking.buyer.rating}``"))
+        booking.status = 3
+        await Booking.update_untaken_boosts()
 
     @commands.command(description="Marks a booking as complete")
     async def done(self, ctx, booking_id):

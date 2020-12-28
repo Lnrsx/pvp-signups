@@ -148,7 +148,7 @@ class Booking(object):
 
     @classmethod
     async def update_untaken_boosts(cls):
-        embed = base_embed(f"Type ``{cfg.settings['command_prefix']}take <ID>`` to claim a boost", title="Untaken boosts")
+        embed = base_embed(f"Type ``{cfg.settings['command_prefix']}take <ID> <mention teammate if 3v3>`` to claim a boost", title="Untaken boosts")
         for b in cls.instances:
             if b.status == 7:
                 booking_string = f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n ' \
