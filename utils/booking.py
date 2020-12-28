@@ -580,7 +580,7 @@ class Booking(object):
                 if realm in x:
                     # always uses the name of the first realm in the list (where the bank character is)
                     send_gold_string += f"send **{realm}** gold to " \
-                                        f"**{cfg.data['bank_characters'][x[0]].format('<:Horde:753970203452506132>', '<:Alliance:753970203402174494>')}**\n"
+                                        f"**{cfg.data['bank_characters'][x[0]].format(cfg.data['horde_emoji'], cfg.data['alliance_emoji'])}**\n"
                     break
 
         send_gold_string += f"When the booking is done, type ``!done {self.id}`` to register the booking as complete " \
