@@ -43,10 +43,8 @@ class Booking(object):
         The real price of the boost specified by the author of the booking. Could be None.
     booster: :class:`Booster`
         A `Booster` class containing information on the boosters and the gold cuts of all members involved
-    attachment: Optional[:class:`str`]
-        The link to a discord CDN image of the advertiser sending the collected gold to the bank character,
-        however since this is only collected when a booking is set to complete and completed bookings are not stored internally,
-        it will almost certainly be None.
+    payment_hash: Optional[:class:`str`]
+        The hashed return string from the mail addon
     gold_realms: Optional[:class:`str`]
         A string of comma seperated realm names that the payment for the booking was collect on. Could be None.
     notes: Optional[:class:`str`]
@@ -68,7 +66,7 @@ class Booking(object):
         self.ad_price_estimate = None
         self.price = 0
         self.booster = Booster()
-        self.attachment = None
+        self.payment_hash = None
         self.gold_realms = None
         self.notes = None
         self.post_message = None
@@ -320,7 +318,7 @@ class Booking(object):
             try:
                 assert self.type == 'Set rating', "Only set rating boosts can be partially refunded"
                 self.price = await self.refund_price()
-                assert await self.get_attachment_link(), "Request timed out"
+                assert await self.get_payment_hash(), "Request timed out"
             except AssertionError as e:
                 raise exceptions.RequestFailed(str(e))
             self.booster.update_price(self.price)
@@ -333,7 +331,7 @@ class Booking(object):
         """Flags a booking as completed, once this happens it is deleted from the cache"""
         try:
             assert self.status == 3, "Booking status must be pending to complete"
-            assert await self.get_attachment_link(), "Request timed out"
+            assert await self.get_payment_hash(), "Request timed out"
             assert await self._get_price(), "Request timed out"
             self.status = 6
             await self._status_update()
@@ -600,23 +598,8 @@ class Booking(object):
             await self.author.send("Unrecognized format, please try again")
             return await self.refund_price()
 
-    async def get_attachment_link(self):
-        def attachment_check(message) -> bool:
-            return message.channel.id == self.author.dm_channel.id and message.author == self.author
-
-        await self.author.send(embed=base_embed(
-            "Please upload a **screenshot of payment being send to the bank character**,\n"
-            "request will timeout in 5 minutes"))
-        try:
-            attachment_message = await commands.Bot.wait_for(self.client, event='message', check=attachment_check, timeout=300)
-            if attachment_message.attachments:
-                self.attachment = attachment_message.attachments[0].url
-            else:
-                self.attachment = attachment_message.content
-            return True
-
-        except TimeoutError:
-            await self.author.send(embed=base_embed("Request timed out"))
+    async def get_payment_hash(self):
+        self.payment_hash = await request.react_message(self, "**the payment hash**")
 
     def format_price_estimate(self):
         if self.type == "Gladiator":
@@ -646,7 +629,7 @@ class Booking(object):
         return [
             statuses[self.status], str(self.id), self.gold_realms or "N/A", str(self.booster.prim), str(self.booster.prim_cut),
             str(self.booster.sec) or 'N/A', str(self.booster.sec_cut), str(self.author.id), str(self.booster.ad_cut),
-            str(self.price), str(self.author), self.attachment or 'Pending Booking Completion']
+            str(self.price), str(self.author), self.payment_hash or 'Pending Booking Completion']
 
 
 class Buyer(object):

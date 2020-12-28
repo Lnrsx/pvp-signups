@@ -6,7 +6,6 @@ logger = get_logger("PvpSignups")
 
 
 class DataManager:
-    # TODO add config validation
     def __init__(self):
         #  Debug mode determines if the bot should validate it's own settings and files before startup.
         #  Once the bot is fully set up, this can be set to false to improve startup time
