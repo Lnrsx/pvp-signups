@@ -104,6 +104,9 @@ class PvpSignups(commands.Bot):
         if hasattr(ctx.command, 'on_error'):
             return
 
+        if isinstance(error, exceptions.BookingUntaken):
+            pass
+
         ignored_exceptions = (commands.CommandNotFound, exceptions.CancelBooking, commands.MissingPermissions)
         error = getattr(error, 'original', error)
 
@@ -124,7 +127,7 @@ class PvpSignups(commands.Bot):
             await self.shutdown()
 
         else:
-            await ctx.send(error)
+            await ctx.send(embed=base_embed("Sorry, an unexpected error ococured please contact PvP management"))
             logger.error(error)
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
