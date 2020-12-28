@@ -82,6 +82,9 @@ class PvpSignups(commands.Bot):
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
                 self.load_extension(f'cogs.{filename[:-3]}')
+        self.remove_command("done")
+        self.remove_command("refund")
+        self.remove_command("setgoldrealm")
 
     @staticmethod
     async def shutdown():

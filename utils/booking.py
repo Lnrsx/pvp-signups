@@ -219,9 +219,7 @@ class Booking(object):
         embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
         self.post_message = await self.post_channel.send(embed=embed)
         await self.author.send(embed=base_embed(
-            f'Booking has been sent! booking ID is: ``{self.id}``.\n If the booking is taken,'
-            ' you will be required to input the realm(s) the gold was taken on, '
-            'booking will cancel if no users sign up'))
+            f'Booking has been sent! booking ID is: ``{self.id}``'))
         await self.post_message.add_reaction(cfg.settings["take_emoji"])
         await self.post_message.add_reaction(cfg.settings["schedule_emoji"])
         self.status = 1
@@ -604,11 +602,9 @@ class Booking(object):
                 if realm in x:
                     # always uses the name of the first realm in the list (where the bank character is)
                     send_gold_string += f"send **{realm}** gold to " \
-                                        f"**{cfg.data['bank_characters'][x[0]].format(cfg.data['horde_emoji'], cfg.data['alliance_emoji'])}**\n"
+                                        f"**{cfg.data['bank_characters'][x[0]].format(cfg.settings['horde_emoji'], cfg.settings['alliance_emoji'])}**\n"
                     break
 
-        send_gold_string += f"When the booking is done, type ``!done {self.id}`` to register the booking as complete " \
-                            "(you will be required to provide a screenshot of you sending the gold)"
         await self.author.send(embed=base_embed(send_gold_string))
 
     async def refund_price(self) -> int:
