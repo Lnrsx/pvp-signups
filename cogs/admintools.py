@@ -3,6 +3,7 @@ import discord
 from utils.misc import base_embed
 from utils import exceptions
 from utils.booking import Booking, statuses
+from math import ceil
 
 
 class AdminTools(commands.Cog):
@@ -14,9 +15,9 @@ class AdminTools(commands.Cog):
 
     @commands.command(description='Lists currently active bookings')
     @commands.has_permissions(administrator=True)
-    async def bookings(self, ctx):
+    async def bookings(self, ctx, page: int = 1):
         embed = base_embed("**Currently active bookings:**")
-        for b in Booking.instances:
+        for b in Booking.instances[(page-1)*25:page*25]:
             booking_string = ''
             booking_string += f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n Boost info: '
             if b.status != 0:
@@ -30,6 +31,7 @@ class AdminTools(commands.Cog):
                 booking_string += '``N/A``\nBooster: ``N/A``\n'
             embed.add_field(name=f"\nID: ``{b.id}``", value=booking_string, inline=False)
         if embed.fields:
+            embed.set_footer(text=f"Page {page} of {ceil(len(Booking.instances)/25)}")
             await ctx.send(embed=embed)
         else:
             await ctx.send(embed=base_embed("There are currently no active bookings"))
