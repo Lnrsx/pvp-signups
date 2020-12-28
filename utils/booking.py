@@ -414,10 +414,11 @@ class Booking(object):
         buyer_realm = await request.react_message(
             self, '**buyers realm** (e.g. Ravencrest)'
             '\nor react with ❌ to cancel the booking', '❌')
-
+        self.buyer.name = buyer_name.lower()
+        self.buyer.realm = buyer_realm.lower()
         if cfg.settings["auto_faction_class_input"]:
             response = await request.get(
-                f'https://eu.api.blizzard.com/profile/wow/character/{buyer_realm.lower()}/{buyer_name.lower()}?namespace=profile-eu&locale=en_GB', token=True)
+                f'https://eu.api.blizzard.com/profile/wow/character/{self.buyer.realm}/{self.buyer.name}?namespace=profile-eu&locale=en_GB', token=True)
             if response['status'] == 200:
                 self.buyer.faction, self.buyer.class_ = response['body']['faction']['name'], response['body']['character_class']['name'].capitalize()
                 self.buyer.name = buyer_name
