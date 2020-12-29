@@ -52,7 +52,7 @@ class Booking(object):
     post_message: Optional[:class:`discord.Message`]
         The message that was posted about the booking in the designated post_bookings channel. Could be None.
     """
-    instances, post_channel, request_channel, untaken_channel, untaken_message = [], None, None, None, None
+    instances, post_channel_2v2, post_channel_3v3, post_channel_glad, request_channel, untaken_channel, untaken_message = [], None, None, None, None, None, None
 
     def __init__(self, bracket, author: discord.User):
         self.__class__.instances.append(self)
@@ -89,11 +89,15 @@ class Booking(object):
         cls.client = client
         if cls.request_channel is None:
             cls.request_channel = commands.Bot.get_channel(cls.client, cfg.settings["request_booking_channel_id"])
-        if cls.post_channel is None:
-            cls.post_channel = commands.Bot.get_channel(cls.client, cfg.settings["post_booking_channel_id"])
+        if cls.post_channel_2v2 is None:
+            cls.post_channel_2v2 = commands.Bot.get_channel(cls.client, cfg.settings["post_booking_2v2_channel_id"])
+        if cls.post_channel_3v3 is None:
+            cls.post_channel_3v3 = commands.Bot.get_channel(cls.client, cfg.settings["post_booking_3v3_channel_id"])
+        if cls.post_channel_glad is None:
+            cls.post_channel_glad = commands.Bot.get_channel(cls.client, cfg.settings["post_booking_glad_channel_id"])
         if cls.untaken_channel is None:
             cls.untaken_channel = commands.Bot.get_channel(cls.client, cfg.settings["untaken_boosts_channel_id"])
-        if not cls.request_channel or not cls.post_channel or not cls.untaken_channel:
+        if not cls.request_channel or not cls.post_channel_2v2 or not cls.untaken_channel:
             raise exceptions.ChannelNotFound
         try:
             await cls.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
@@ -216,7 +220,19 @@ class Booking(object):
         embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer.class_][self.buyer.spec]}``{self.buyer.spec} {self.buyer.class_}``')
         embed.add_field(name='Notes', value=f"``{self.notes}``")
         embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
-        self.post_message = await self.post_channel.send(embed=embed)
+        if self.buyer.faction == "Horde":
+            mention = cfg.settings["horde_role"]
+        elif self.buyer.faction == "Alliance":
+            mention = cfg.settings["alliance_role"]
+        else:
+            mention = ''
+        if self.bracket == "2v2":
+            self.post_message = await self.post_channel_2v2.send(mention, embed=embed)
+        elif self.bracket == "3v3":
+            if self.type == "Gladiator":
+                self.post_message = await self.post_channel_glad.send(mention, embed=embed)
+            else:
+                self.post_message = await self.post_channel_3v3.send(mention, embed=embed)
         await self.author.send(embed=base_embed(
             f'Booking has been sent! booking ID is: ``{self.id}``'))
         await self.post_message.add_reaction(cfg.settings["take_emoji"])
@@ -245,7 +261,13 @@ class Booking(object):
                 reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "schedule"}
 
                 if not reactions["users"]:
-                    await self.post_channel.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
+                    if self.bracket == "2v2":
+                        await self.post_channel_2v2.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
+                    elif self.bracket == "3v3":
+                        if self.type == "Gladiator":
+                            await self.post_channel_glad.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
+                        else:
+                            await self.post_channel_3v3.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
                     await self.author.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
                     self.status = 7
                     self.post_message = None
@@ -262,11 +284,9 @@ class Booking(object):
                 population=reactions["users"],
                 weights=[0.1 if user_weights[x] < 0 else user_weights[x] for x in reactions["users"]])[0]
 
-            weight_file[self.bracket] = user_weights
-            json.dump(weight_file, open(f'data/userweights.json', 'w'), indent=4)
             mention = ', **please mention your teammate**' \
                       f' within {round(cfg.settings["teammate_pick_timeout"] / 60)} minutes or the booking will be rerolled' if self.bracket == '3v3' else ''
-            await self.post_channel.send(
+            await self.post_channel_2v2.send(
                 f"<@{self.booster.prim}> was picked for {self.author.display_name}'s "
                 f"``{self.bracket} {self.type} {self.buyer.rating}`` boost ({reactions['time']}){mention}")
 
@@ -284,13 +304,13 @@ class Booking(object):
             except asyncio.TimeoutError:
                 embed = self.post_message.embeds[0]
                 embed.title = f"Rerolled {self.bracket} Bookings"
-                self.post_message = await self.post_channel.send(embed=embed)
+                self.post_message = await self.post_channel_2v2.send(embed=embed)
                 await self.post_message.add_reaction(cfg.settings["take_emoji"])
                 await self.post_message.add_reaction(cfg.settings["schedule_emoji"])
                 return await self.pick_winner()
 
             self.booster.sec, self.booster.prim_cut, self.booster.sec_cut = winner_message.mentions[0].id, self.booster.prim_cut // 2, self.booster.prim_cut // 2
-            await self.post_channel.send(embed=base_embed(f"<@{self.booster.sec}> has been picked as {winner_user.mention}'s teammate"))
+            await self.post_channel_2v2.send(embed=base_embed(f"<@{self.booster.sec}> has been picked as {winner_user.mention}'s teammate"))
 
         # post message is no longer relevent so is removed to save space in cache
         self.post_message = None
@@ -301,6 +321,8 @@ class Booking(object):
 
                 else:
                     user_weights[key] = round(user_weights[key] + (self.booster.prim_cut * cfg.settings["bad_luck_protection_mofifier"]), 2)
+        weight_file[self.bracket] = user_weights
+        json.dump(weight_file, open(f'data/userweights.json', 'w'), indent=4)
         self.status = 2
 
     async def refund(self, full=True):
@@ -494,7 +516,7 @@ class Booking(object):
             self.buyer.rating = boost_rating
             self.price_recommendation = pricing.set_rating(self.bracket, start_rating, end_rating)
 
-        elif boost_rating.isnumeric() and int(boost_rating) in range(0, 3501):
+        elif self.type != "Set rating" and boost_rating.isnumeric() and int(boost_rating) in range(0, 3501):
             if self.type == '1 win':
                 self.buyer.rating = boost_rating
                 self.price_recommendation = pricing.one_win(self.bracket, int(boost_rating))
@@ -512,8 +534,9 @@ class Booking(object):
             await self._get_rating_range()
 
     async def _get_price_estimate(self):
+        recommendation = f"{self.price_recommendation:,}" if self.type != "Gladiator" else "See glad pricing"
         price_estimate = await request.react_message(
-            self, f"the **estimated price of the boost**, \n recommended price: **{self.price_recommendation:,}**\nThis is not the final price, just what is shown when the booking is posted", '❌')
+            self, f"the **estimated price of the boost**, \n recommended price: **{recommendation}**\nThis is not the final price, just what is shown when the booking is posted", '❌')
         price_estimate = price_estimate.replace(",", "").replace(".", "")
         try:
             assert price_estimate.isnumeric(), 'Boost price must be a number, please try again.'
@@ -610,7 +633,13 @@ class Booking(object):
     async def _recache_message(self):
         """Fetch the post message of the booking instance, used when the reaction on the message need to be rechecked"""
         if self.status == 1:
-            self.post_message = await self.post_channel.fetch_message(self.post_message.id)
+            if self.bracket == "2v2":
+                self.post_message = await self.post_channel_2v2.fetch_message(self.post_message.id)
+            elif self.bracket == "3v3":
+                if self.type == "Gladiator":
+                    self.post_message = await self.post_channel_glad.fetch_message(self.post_message.id)
+                else:
+                    self.post_message = await self.post_channel_3v3.fetch_message(self.post_message.id)
 
     async def _status_update(self):
         await self.author.send(embed=base_embed(f"Booking ``{self.id}`` has been set to ``{statuses[self.status]}``"))

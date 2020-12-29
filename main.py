@@ -99,9 +99,6 @@ class PvpSignups(commands.Bot):
         if hasattr(ctx.command, 'on_error'):
             return
 
-        if isinstance(error, exceptions.BookingUntaken):
-            pass
-
         ignored_exceptions = (commands.CommandNotFound, exceptions.CancelBooking, commands.MissingPermissions)
         error = getattr(error, 'original', error)
 

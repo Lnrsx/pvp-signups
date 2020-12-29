@@ -73,6 +73,14 @@ class AdminTools(commands.Cog):
         except AssertionError as e:
             raise exceptions.RequestFailed(str(e))
 
+    @commands.command(description="Deletes a booking")
+    @commands.has_permissions(administrator=True)
+    async def deletebooking(self, ctx, booking_id):
+        booking = Booking.get(booking_id)
+        booking.delete()
+        await Booking.update_untaken_boosts()
+        await ctx.send(embed=base_embed(f"Deleted booking ``{booking_id}``"))
+
 
 def setup(client):
     client.add_cog(AdminTools(client))

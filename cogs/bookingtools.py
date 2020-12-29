@@ -18,13 +18,17 @@ class Bookings(commands.Cog):
         cond1 = reaction.channel_id == cfg.settings["request_booking_channel_id"]
         cond2 = reaction.message_id == cfg.settings["request_booking_message_id"]
         cond3 = reaction.emoji.name in [cfg.settings["twos_emoji"], cfg.settings["threes_emoji"]]
-        if cond1 and cond2 and cond3:
+        cond4 = reaction.user_id != 753740129943945307
+        if cond1 and cond2 and cond3 and cond4:
             author = commands.Bot.get_user(self.client, reaction.user_id)
             bracket = '2v2' if reaction.emoji.name == cfg.settings["twos_emoji"] else '3v3'
             booking = Booking(bracket, author)
             message = await Booking.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
             await message.remove_reaction(reaction.emoji, author)
-            await booking.create()
+            try:
+                await booking.create()
+            except exceptions.BookingUntaken:
+                pass
 
     @commands.command(description="Take an untaken boost, must be in the untaken boosts channel")
     async def take(self, ctx, booking_id, partner: discord.User = None):
