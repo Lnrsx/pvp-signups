@@ -36,7 +36,7 @@ class PvpSignups(commands.Bot):
     async def on_ready(self):
         try:
             await Booking.load(self)
-
+            await Booking.update_untaken_boosts()
             if cfg.settings['auto_faction_class_input']:
                 await request.token('wowapi')
             else:

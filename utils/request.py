@@ -152,7 +152,9 @@ class Request(object):
         if response[0].emoji != '❌':
             return response[0].emoji
         else:
-            await booking.cancel()
+            await booking.author.send(embed=base_embed(f"Booking ``{booking.id}`` has been cancelled"))
+            booking.delete()
+            raise exceptions.CancelBooking
 
 
 request = Request()

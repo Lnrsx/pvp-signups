@@ -3,7 +3,9 @@ from discord.ext import commands
 from utils.booking import Booking
 from utils import exceptions
 from utils.config import cfg
-from utils.misc import base_embed
+from utils.misc import base_embed, get_logger
+
+logger = get_logger("PvpSignups")
 
 
 class Bookings(commands.Cog):
@@ -26,6 +28,7 @@ class Bookings(commands.Cog):
             message = await Booking.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
             await message.remove_reaction(reaction.emoji, author)
             try:
+                logger.info(f"Booking being created by {author.display_name}")
                 await booking.create()
             except exceptions.BookingUntaken:
                 pass

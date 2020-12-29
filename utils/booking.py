@@ -159,7 +159,9 @@ class Booking(object):
                                  f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}``\n ' \
                                  f'Buyer name: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm}/{b.buyer.name})\n' \
                                  f'Buyer info: {cfg.settings[b.buyer.faction.lower() + "_emoji"]}``{b.buyer.faction}`` ' \
-                                 f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}``{b.buyer.spec} {b.buyer.class_}``'
+                                 f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}``{b.buyer.spec} {b.buyer.class_}`` \n' \
+                                 f'Est. booster cut: {b.format_price_estimate()}\n ' \
+                                 f'Notes: ``{b.notes}``\n\u200b\n--------------------'
                 embed.add_field(name=f"\n\u200b\nID: ``{b.id}``", value=booking_string, inline=False)
         if not embed.fields:
             embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
@@ -618,13 +620,13 @@ class Booking(object):
     async def get_payment_hash(self):
         self.payment_hash = await request.react_message(self, "**the payment hash**")
 
-    def format_price_estimate(self):
+    def format_price_estimate(self, modifier=0.8):
         if self.type == "Gladiator":
             return "``See glad pricing``"
         else:
             if not self.ad_price_estimate:
                 self.ad_price_estimate = 0
-            boost_cut_recommendation = self.ad_price_estimate * cfg.settings['booster_cut']
+            boost_cut_recommendation = self.ad_price_estimate * modifier
             price_estimate_string = f"{round(boost_cut_recommendation):,}g"
             if self.type == 'Hourly':
                 price_estimate_string += "/hr"
