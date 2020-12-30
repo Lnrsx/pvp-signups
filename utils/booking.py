@@ -214,14 +214,18 @@ class Booking(object):
             description='**ID:** ``{}``'.format(self.id),
             colour=discord.Colour.purple())
         embed.set_author(name=self.author.display_name, icon_url=self.author.avatar_url)
-        embed.add_field(name='Buyer Name', value=f'[{self.buyer.name}-{self.buyer.realm}](https://check-pvp.fr/eu/{self.buyer.realm}/{self.buyer.name})')
+        embed.add_field(name='Buyer Name', value=f'[{self.buyer.name}-{self.buyer.realm}](https://check-pvp.fr/eu/{self.buyer.realm}/{self.buyer.name})' if ' ' in self.buyer.realm else f'{self.buyer.name}-{self.buyer.realm}')
         embed.add_field(name='Boost type', value=f"``{self.type}``")
         embed.add_field(name='Est. booster cut', value=self.format_price_estimate())
         embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.buyer.faction.lower() + '_emoji']}``{self.buyer.faction}``")
         embed.add_field(name='Boost rating', value=f"``{self.buyer.rating}``")
         embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer.class_][self.buyer.spec]}``{self.buyer.spec} {self.buyer.class_}``')
         embed.add_field(name='Notes', value=f"``{self.notes}``")
-        embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
+        if ' ' in self.buyer.realm:
+            embed.set_footer(text=f"https://check-pvp.fr/eu/{self.buyer.realm}/{self.buyer.name} discord can't link URLs with spaces :)"
+                                  f"\n Winner will be picked in {cfg.settings['post_wait_time']} seconds")
+        else:
+            embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
         if self.buyer.faction == "Horde":
             mention = cfg.settings["horde_role"]
         elif self.buyer.faction == "Alliance":
@@ -257,19 +261,23 @@ class Booking(object):
             await self._recache_message()
             reactions = await [i.users() for i in self.post_message.reactions if str(i.emoji) == cfg.settings["take_emoji"]][0].flatten()
             reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "now"}
-
+            await self.post_message.clear_reactions()
             if not reactions["users"]:
                 reactions = await [i.users() for i in self.post_message.reactions if str(i.emoji) == cfg.settings["schedule_emoji"]][0].flatten()
                 reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "schedule"}
 
                 if not reactions["users"]:
+                    untaken_message = f'No users signed up to booking ``{self.id}``, it will be moved to {self.untaken_channel.mention}, to claim the boost, type: ``!take {self.id} '
                     if self.bracket == "2v2":
-                        await self.post_channel_2v2.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
+                        post_channel = self.post_channel_2v2
                     elif self.bracket == "3v3":
+                        untaken_message += '<Mention teammate> '
                         if self.type == "Gladiator":
-                            await self.post_channel_glad.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
+                            post_channel = self.post_channel_glad
                         else:
-                            await self.post_channel_3v3.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
+                            post_channel = self.post_channel_3v3
+                    untaken_message += f'in {self.untaken_channel.mention}'
+                    await post_channel.send(embed=base_embed(untaken_message))
                     await self.author.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
                     self.status = 7
                     self.post_message = None
