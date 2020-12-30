@@ -74,12 +74,14 @@ class AdminTools(commands.Cog):
             raise exceptions.RequestFailed(str(e))
 
     @commands.command(description="Deletes a booking")
-    @commands.has_permissions(administrator=True)
     async def deletebooking(self, ctx, booking_id):
         booking = Booking.get(booking_id)
-        booking.delete()
-        await Booking.update_untaken_boosts()
-        await ctx.send(embed=base_embed(f"Deleted booking ``{booking_id}``"))
+        if ctx.message.author.server_permissions.administrator or ctx.message.author.id == booking.author.id:
+            booking.delete()
+            await Booking.update_untaken_boosts()
+            await ctx.send(embed=base_embed(f"Deleted booking ``{booking_id}``"))
+        else:
+            raise exceptions.RequestFailed("You do not have permission to do that")
 
 
 def setup(client):

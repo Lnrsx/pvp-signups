@@ -82,15 +82,12 @@ class PvpSignups(commands.Bot):
         self.remove_command("setgoldrealm")
 
     @staticmethod
-    async def shutdown():
+    async def tryrestart():
         if [b for b in Booking.instances if b.status in range(0, 3)]:
             logger.warning("it is not safe to shut down")
-            return
+            return False
         for booking in Booking.instances:
             if booking.status not in range(0, 3):
-                booking.cache()
-            else:
-                await booking.author.send(embed=base_embed("I am being shut down, you will need to make the booking again when i come back online"))
                 booking.cache()
         logger.info("All bookings have been cached, shutting down")
         exit()
@@ -114,9 +111,6 @@ class PvpSignups(commands.Bot):
         elif isinstance(error, exceptions.RequestFailed):
             logger.warning(f"Command request raised an exception: {error}")
             await ctx.send(embed=base_embed(str(error)))
-
-        elif isinstance(error, KeyboardInterrupt):
-            await self.shutdown()
 
         else:
             await ctx.send(embed=base_embed("Sorry, an unexpected error ococured please contact PvP management"))

@@ -383,6 +383,7 @@ class Booking(object):
             with open("data/bookings.json", "w") as f:
                 del data[str(self.id)]
                 json.dump(data, f, indent=4)
+        logger.info(f"Booking {self.id} by {self.author.display_name} has been deleted")
         for i, obj in enumerate(self.instances):
             if obj.id == self.id:
                 del self.instances[i]
