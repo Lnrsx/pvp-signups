@@ -22,7 +22,7 @@ class AdminTools(commands.Cog):
             booking_string += f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n Boost info: '
             if b.status != 0:
                 booking_string += f'``{b.bracket} {b.type} {b.buyer.rating}``\n'
-                if b.status != 1 or b.status != 7:
+                if b.status != 1 and b.status != 7:
                     booking_string += f'{"Boosters" if b.bracket == "3v3" else "Booster"}: '
                     booking_string += f'<@{b.booster.prim}> {f"and <@{b.booster.sec}>" if b.bracket == "3v3" else ""}'
                 else:
