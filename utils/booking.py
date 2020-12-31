@@ -13,6 +13,7 @@ import asyncio
 import json
 import jsonpickle
 import random
+import math
 
 logger = get_logger("PvpSignups")
 statuses = ['Compiling', 'Posted', 'Pending (not uploaded)', 'Pending', 'Refund', 'Partial refund', 'Complete', 'Untaken']
@@ -153,16 +154,17 @@ class Booking(object):
     @classmethod
     async def update_untaken_boosts(cls):
         embed = base_embed(f"Type ``{cfg.settings['command_prefix']}take <ID> <mention teammate if 3v3>`` to claim a boost", title="Untaken boosts")
-        for b in cls.instances:
-            if b.status == 7:
-                booking_string = f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n ' \
-                                 f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}``\n ' \
-                                 f'Buyer name: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm}/{b.buyer.name})\n' \
-                                 f'Buyer info: {cfg.settings[b.buyer.faction.lower() + "_emoji"]}``{b.buyer.faction}`` ' \
-                                 f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}``{b.buyer.spec} {b.buyer.class_}`` \n' \
-                                 f'Est. booster cut: {b.format_price_estimate()}\n ' \
-                                 f'Notes: ``{b.notes}``\n\u200b\n--------------------'
-                embed.add_field(name=f"\n\u200b\nID: ``{b.id}``", value=booking_string, inline=False)
+        untaken_bookings = [b for b in cls.instances if b.status == 7]
+        pages_req = untaken_bookings / 15
+        for b in [b for b in cls.instances if b.status == 7][:15]:
+            booking_string = f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n ' \
+                             f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}``\n ' \
+                             f'Buyer name: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm}/{b.buyer.name})\n' \
+                             f'Buyer info: {cfg.settings[b.buyer.faction.lower() + "_emoji"]}``{b.buyer.faction}`` ' \
+                             f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}``{b.buyer.spec} {b.buyer.class_}`` \n' \
+                             f'Est. booster cut: {b.format_price_estimate()}\n ' \
+                             f'Notes: ``{b.notes}``\n\u200b'
+            embed.add_field(name=f"\n\u200b\nID: ``{b.id}``", value=booking_string, inline=False)
         if not embed.fields:
             embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
         await cls.untaken_message.edit(embed=embed)
@@ -214,18 +216,14 @@ class Booking(object):
             description='**ID:** ``{}``'.format(self.id),
             colour=discord.Colour.purple())
         embed.set_author(name=self.author.display_name, icon_url=self.author.avatar_url)
-        embed.add_field(name='Buyer Name', value=f'[{self.buyer.name}-{self.buyer.realm}](https://check-pvp.fr/eu/{self.buyer.realm}/{self.buyer.name})' if ' ' in self.buyer.realm else f'{self.buyer.name}-{self.buyer.realm}')
+        embed.add_field(name='Buyer Name', value=f'[{self.buyer.name}-{self.buyer.realm}](https://check-pvp.fr/eu/{self.buyer.realm.replace(" ", "%20")}/{self.buyer.name})')
         embed.add_field(name='Boost type', value=f"``{self.type}``")
         embed.add_field(name='Est. booster cut', value=self.format_price_estimate())
         embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.buyer.faction.lower() + '_emoji']}``{self.buyer.faction}``")
         embed.add_field(name='Boost rating', value=f"``{self.buyer.rating}``")
         embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer.class_][self.buyer.spec]}``{self.buyer.spec} {self.buyer.class_}``')
         embed.add_field(name='Notes', value=f"``{self.notes}``")
-        if ' ' in self.buyer.realm:
-            embed.set_footer(text=f"https://check-pvp.fr/eu/{self.buyer.realm}/{self.buyer.name} discord can't link URLs with spaces :)"
-                                  f"\n Winner will be picked in {cfg.settings['post_wait_time']} seconds")
-        else:
-            embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
+        embed.set_footer(text=f"Winner will be picked in {cfg.settings['post_wait_time']} seconds")
         if self.buyer.faction == "Horde":
             mention = cfg.settings["horde_role"]
         elif self.buyer.faction == "Alliance":
@@ -267,7 +265,7 @@ class Booking(object):
                 reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "schedule"}
 
                 if not reactions["users"]:
-                    untaken_message = f'No users signed up to booking ``{self.id}``, it will be moved to {self.untaken_channel.mention}, to claim the boost, type: ``!take {self.id} '
+                    untaken_message = f'No users signed up to booking ``{self.id}``, it will be moved to {self.untaken_channel.mention}, to claim the boost, type: ``!take {self.id}`` '
                     if self.bracket == "2v2":
                         post_channel = self.post_channel_2v2
                     elif self.bracket == "3v3":
@@ -296,10 +294,15 @@ class Booking(object):
 
             mention = ', **please mention your teammate**' \
                       f' within {round(cfg.settings["teammate_pick_timeout"] / 60)} minutes or the booking will be rerolled' if self.bracket == '3v3' else ''
-            await self.post_channel_2v2.send(
-                f"<@{self.booster.prim}> was picked for {self.author.display_name}'s "
-                f"``{self.bracket} {self.type} {self.buyer.rating}`` boost ({reactions['time']}){mention}")
-
+            pick_message = f"<@{self.booster.prim}> was picked for {self.author.display_name}'s " \
+                           f"``{self.bracket} {self.type} {self.buyer.rating}`` boost ({reactions['time']}){mention}"
+            if self.bracket == "2v2":
+                await self.post_channel_2v2.send(pick_message)
+            elif self.bracket == "3v3":
+                if self.type == "Gladiator":
+                    await self.post_channel_glad.send(pick_message)
+                else:
+                    await self.post_channel_3v3.send(pick_message)
         else:
             return False
 

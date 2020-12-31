@@ -20,7 +20,7 @@ class Bookings(commands.Cog):
         cond1 = reaction.channel_id == cfg.settings["request_booking_channel_id"]
         cond2 = reaction.message_id == cfg.settings["request_booking_message_id"]
         cond3 = reaction.emoji.name in [cfg.settings["twos_emoji"], cfg.settings["threes_emoji"]]
-        cond4 = reaction.user_id != 753740129943945307
+        cond4 = reaction.user_id != self.client.user.id
         if cond1 and cond2 and cond3 and cond4:
             author = commands.Bot.get_user(self.client, reaction.user_id)
             bracket = '2v2' if reaction.emoji.name == cfg.settings["twos_emoji"] else '3v3'
@@ -53,6 +53,7 @@ class Bookings(commands.Cog):
         await booking.author.send(embed=base_embed(f"You booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm} {booking.bracket} {booking.type} {booking.buyer.rating}``"
                                                    f"\n has been claimed by {ctx.message.author.display_name}"))
         await ctx.message.author.send(embed=base_embed(f"You have claimed booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm}`` ``{booking.bracket} {booking.type} {booking.buyer.rating}``"))
+        logger.info(f"Booking {booking.id} has been claimed by {booking.booster.prim}")
         booking.status = 3
         await Booking.update_untaken_boosts()
 

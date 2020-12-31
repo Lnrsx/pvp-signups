@@ -15,26 +15,33 @@ class AdminTools(commands.Cog):
 
     @commands.command(description='Lists currently active bookings')
     @commands.has_permissions(administrator=True)
-    async def bookings(self, ctx, page: int = 1):
-        embed = base_embed("**Currently active bookings:**")
-        for b in Booking.instances[(page-1)*25:page*25]:
-            booking_string = ''
-            booking_string += f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n Boost info: '
-            if b.status != 0:
-                booking_string += f'``{b.bracket} {b.type} {b.buyer.rating}``\n'
-                if b.status != 1 and b.status != 7:
-                    booking_string += f'{"Boosters" if b.bracket == "3v3" else "Booster"}: '
-                    booking_string += f'<@{b.booster.prim}> {f"and <@{b.booster.sec}>" if b.bracket == "3v3" else ""}'
-                else:
-                    booking_string += 'Booster: ``N/A``\n'
-            else:
-                booking_string += '``N/A``\nBooster: ``N/A``\n'
-            embed.add_field(name=f"\nID: ``{b.id}``", value=booking_string, inline=False)
-        if embed.fields:
-            embed.set_footer(text=f"Page {page} of {ceil(len(Booking.instances)/25)}")
-            await ctx.send(embed=embed)
+    async def bookings(self, ctx, active=None):
+        page_length = 25
+        if active == "active":
+            booking_list = [b for b in Booking.instances if b.status == 3]
         else:
+            booking_list = Booking.instances
+        booking_pages = [Booking.instances[i:i + page_length] for i in range(0, len(booking_list), page_length)]
+        embed = base_embed("**Current bookings:**")
+        if not booking_list:
             await ctx.send(embed=base_embed("There are currently no active bookings"))
+        for page_num, page in enumerate(booking_pages):
+            for b in page:
+                booking_string = ''
+                booking_string += f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n Boost info: '
+                if b.status != 0:
+                    booking_string += f'``{b.bracket} {b.type} {b.buyer.rating}``\n'
+                    if b.status != 1 and b.status != 7:
+                        booking_string += f'{"Boosters" if b.bracket == "3v3" else "Booster"}: '
+                        booking_string += f'<@{b.booster.prim}> {f"and <@{b.booster.sec}>" if b.bracket == "3v3" else ""}'
+                    else:
+                        booking_string += 'Booster: ``N/A``\n'
+                else:
+                    booking_string += '``N/A``\nBooster: ``N/A``\n'
+                embed.add_field(name=f"\nID: ``{b.id}``", value=booking_string, inline=False)
+            embed.set_footer(text=f"Page {page_num+1} of {ceil(len(Booking.instances)/page_length)}")
+            await ctx.send(embed=embed)
+            embed = base_embed("")
 
     @commands.command(description="Lists all available commands")
     @commands.has_permissions(administrator=True)

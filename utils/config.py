@@ -1,6 +1,7 @@
 from utils.misc import get_logger
 import json
 import os
+from socket import gethostname
 
 logger = get_logger("PvpSignups")
 
@@ -10,10 +11,16 @@ class DataManager:
         #  Debug mode determines if the bot should validate it's own settings and files before startup.
         #  Once the bot is fully set up, this can be set to false to improve startup time
         self.debug = True
+        self.devmode = gethostname() == 'DESKTOP-SKJPMQE'
+        if self.devmode:
+            logger.info("Running on Developer Mode")
+            self.configpath = "devconfig.json"
+        else:
+            self.configpath = "config.json"
         if self.debug:
-            if os.path.isfile("config.json"):
+            if os.path.isfile(self.configpath):
                 try:
-                    self.settings = {**json.load(open("config.json", "r"))}
+                    self.settings = {**json.load(open(self.configpath, "r"))}
                     self.validate()
                 except json.decoder.JSONDecodeError:
                     logger.error("Invalid syntax in the config file")
@@ -25,14 +32,14 @@ class DataManager:
                     logger.error("No config file detected")
                 exit()
         else:
-            self.settings = {**json.load(open("config.json", "r"))}
+            self.settings = {**json.load(open(self.configpath, "r"))}
         self.data = {**json.load(open("data/data.json", "r"))}
         self.pricing = {**json.load(open("data/pricing.json", "r"))}
 
     def cfgset(self, key, value):
         if key in self.settings.keys():
             self.settings[key] = value
-            with open("config.json", "w") as f:
+            with open(self.configpath, "w") as f:
                 json.dump(self.settings, f, indent=4)
             return True
 
