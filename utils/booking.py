@@ -13,6 +13,7 @@ import asyncio
 import json
 import jsonpickle
 import random
+import operator
 
 logger = get_logger("PvpSignups")
 statuses = ['Compiling', 'Posted', 'Pending (not uploaded)', 'Pending', 'Refund', 'Partial refund', 'Complete', 'Untaken']
@@ -113,10 +114,11 @@ class Booking(object):
         for message_id in cfg.settings["untaken_boosts_message_id"]:
             try:
                 cls.untaken_messages.append(await cls.untaken_channel.fetch_message(message_id))
+                logger.info(f"Located untaken boost message ID: {message_id}")
             except discord.NotFound:
                 cfg.settings["untaken_boosts_message_id"].remove(message_id)
                 cfg.cfgset("untaken_boosts_message_id", cfg.settings["untaken_boosts_message_id"])
-                logger.info("disgarding unlocatable untaken boost message ID")
+                logger.info(f"disgarding unlocatable untaken boost message ID: {message_id}")
         with open("data/bookings.json", "r") as f:
             cache = json.load(f)
             for _instance in cache.values():
@@ -164,7 +166,7 @@ class Booking(object):
     async def update_untaken_boosts(cls):
         embed = base_embed(f"Type ``{cfg.settings['command_prefix']}take <ID> <mention teammate if 3v3>`` to claim a boost", title="Untaken boosts")
         page_length = 10
-        untaken_boosts = [b for b in Booking.instances if b.status == 7]
+        untaken_boosts = sorted([b for b in Booking.instances if b.status == 7], key=operator.attrgetter("buyer.class_"))
         untaken_bookings_pages = [untaken_boosts[i:i + page_length] for i in range(0, len(untaken_boosts), page_length)]
         for i, page in enumerate(untaken_bookings_pages):
             for b in page:
