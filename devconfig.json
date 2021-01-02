@@ -13,14 +13,17 @@
     "post_booking_glad_channel_id": 793447771382087702,
     "request_booking_channel_id": 775088001385889802,
     "request_booking_message_id": 794262631048282162,
-    "untaken_boosts_channel_id": 793167534681489420,
-    "untaken_boosts_message_id": [
-        794665057442725918,
-        794665058558148619,
-        794665060290789396,
-        794665061314330644,
-        794665062320439366,
-        794917021489823754
+    "untaken_boosts_channel_id_2v2": 793167534681489420,
+    "untaken_boosts_channel_id_3v3": 794969234597740565,
+    "untaken_boosts_message_id_2v2": [
+        794974130575114291,
+        794974132650901564,
+        794974134341599262,
+        794974135989698600,
+        794977106835537961
+    ],
+    "untaken_boosts_message_id_3v3": [
+        794974137390727168
     ],
     "horde_role": "<@&683007107829989379>",
     "alliance_role": "<@&699941412434870282>",

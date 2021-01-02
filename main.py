@@ -56,7 +56,7 @@ class PvpSignups(commands.Bot):
             if str(e) == "untaken_message":
                 logger.warning("No valid untaken message was found in the untaken booking channel, automatically creating...")
                 untaken_message = await Booking.untaken_channel.send(embed=base_embed("Loading bookings...", title="Untaken boosts"))
-                cfg.cfgset("untaken_boosts_message_id", untaken_message.id)
+                cfg.cfgset("untaken_boosts_message_id_2v2", untaken_message.id)
                 await Booking.load(self)
                 await Booking.update_untaken_boosts()
 

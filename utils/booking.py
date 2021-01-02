@@ -13,12 +13,12 @@ import asyncio
 import json
 import jsonpickle
 import random
-import operator
 
 logger = get_logger("PvpSignups")
 statuses = ['Compiling', 'Posted', 'Pending (not uploaded)', 'Pending', 'Refund', 'Partial refund', 'Complete', 'Untaken']
 
 
+# noinspection PyUnresolvedReferences
 class Booking(object):
     """Represents a PvP Booking.
 
@@ -54,13 +54,13 @@ class Booking(object):
         The message that was posted about the booking in the designated post_bookings channel. Could be None.
     """
     instances = []
-    untaken_messages = []
+    untaken_messages = {"2v2": [], "3v3": []}
     client = None
     post_channel_2v2 = None
     post_channel_3v3 = None
     post_channel_glad = None
     request_channel = None
-    untaken_channel = None
+    untaken_channel = {"2v2": None, "3v3": None}
 
     def __init__(self, bracket, author: discord.User):
         self.__class__.instances.append(self)
@@ -103,22 +103,26 @@ class Booking(object):
             cls.post_channel_3v3 = commands.Bot.get_channel(cls.client, cfg.settings["post_booking_3v3_channel_id"])
         if cls.post_channel_glad is None:
             cls.post_channel_glad = commands.Bot.get_channel(cls.client, cfg.settings["post_booking_glad_channel_id"])
-        if cls.untaken_channel is None:
-            cls.untaken_channel = commands.Bot.get_channel(cls.client, cfg.settings["untaken_boosts_channel_id"])
-        if not cls.request_channel or not cls.post_channel_2v2 or not cls.untaken_channel:
+        if cls.untaken_channel["2v2"] is None:
+            cls.untaken_channel["2v2"] = commands.Bot.get_channel(cls.client, cfg.settings["untaken_boosts_channel_id_2v2"])
+        if cls.untaken_channel["3v3"] is None:
+            cls.untaken_channel["3v3"] = commands.Bot.get_channel(cls.client, cfg.settings["untaken_boosts_channel_id_3v3"])
+        if not cls.request_channel or not cls.post_channel_2v2 or not cls.untaken_channel["2v2"] or not cls.untaken_channel["3v3"]:
             raise exceptions.ChannelNotFound
         try:
             await cls.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
+            logger.info("Successfully located request channel")
         except discord.NotFound:
             raise exceptions.MessageNotFound("request_message")
-        for message_id in cfg.settings["untaken_boosts_message_id"]:
-            try:
-                cls.untaken_messages.append(await cls.untaken_channel.fetch_message(message_id))
-                logger.info(f"Located untaken boost message ID: {message_id}")
-            except discord.NotFound:
-                cfg.settings["untaken_boosts_message_id"].remove(message_id)
-                cfg.cfgset("untaken_boosts_message_id", cfg.settings["untaken_boosts_message_id"])
-                logger.info(f"disgarding unlocatable untaken boost message ID: {message_id}")
+        for bracket, messages in zip(["2v2", "3v3"], [cls.untaken_messages["2v2"], cls.untaken_messages["3v3"]]):
+            for message_id in cfg.settings["untaken_boosts_message_id_"+bracket]:
+                try:
+                    messages.append(await cls.untaken_channel[bracket].fetch_message(message_id))
+                    logger.info(f"Located untaken boost message ID: {message_id}")
+                except discord.NotFound:
+                    cfg.settings["untaken_boosts_message_id_"+bracket].remove(message_id)
+                    cfg.cfgset("untaken_boosts_message_id_"+bracket, cfg.settings["untaken_boosts_message_id_"+bracket])
+                    logger.info(f"disgarding unlocatable untaken boost message ID: {message_id}")
         with open("data/bookings.json", "r") as f:
             cache = json.load(f)
             for _instance in cache.values():
@@ -166,30 +170,46 @@ class Booking(object):
     async def update_untaken_boosts(cls):
         embed = base_embed(f"Type ``{cfg.settings['command_prefix']}take <ID> <mention teammate if 3v3>`` to claim a boost", title="Untaken boosts")
         page_length = 10
-        untaken_boosts = sorted([b for b in Booking.instances if b.status == 7], key=operator.attrgetter("buyer.class_"))
-        untaken_bookings_pages = [untaken_boosts[i:i + page_length] for i in range(0, len(untaken_boosts), page_length)]
-        for i, page in enumerate(untaken_bookings_pages):
-            for b in page:
-                booking_string = f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n ' \
-                                 f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}``\n ' \
-                                 f'Buyer name: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm.replace(" ", "%20")}/{b.buyer.name})\n' \
-                                 f'Buyer info: {cfg.settings[b.buyer.faction.lower() + "_emoji"]}``{b.buyer.faction}`` ' \
-                                 f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}``{b.buyer.spec} {b.buyer.class_}`` \n' \
-                                 f'Est. booster cut: {b.format_price_estimate()}\n ' \
-                                 f'Notes: ``{b.notes}``\n\u200b'
-                embed.add_field(name=f"\n\u200b\nID: ``{b.id}``", value=booking_string, inline=False)
-            if not embed.fields:
-                embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
-                break
-            if len(cls.untaken_messages)-1 >= i:
-                await cls.untaken_messages[i].edit(embed=embed)
-                embed = base_embed("")
-            else:
-                new_untaken_page = await cls.untaken_channel.send(embed=embed)
-                embed = base_embed("")
-                cls.untaken_messages.append(new_untaken_page)
-                cfg.settings["untaken_boosts_message_id"].append(new_untaken_page.id)
-                cfg.cfgset("untaken_boosts_message_id", cfg.settings["untaken_boosts_message_id"])
+        untaken_boosts_2v2 = [b for b in Booking.instances if b.status == 7 and b.bracket == "2v2"]
+        untaken_boosts_3v3 = [b for b in Booking.instances if b.status == 7 and b.bracket == "3v3"]
+        for bracket, untaken_boosts in zip(["2v2", "3v3"], [untaken_boosts_2v2, untaken_boosts_3v3]):
+            untaken_boosts.sort(key=lambda b: (b.buyer.class_, b.buyer.spec))
+            untaken_bookings_pages = [untaken_boosts[i:i + page_length] for i in range(0, len(untaken_boosts), page_length)]
+            if len(untaken_bookings_pages) < len(cls.untaken_messages[bracket]):
+                for message in cls.untaken_messages[bracket][len(untaken_bookings_pages):]:
+                    cfg.settings["untaken_boosts_message_id_"+bracket].remove(message.id)
+                    cfg.cfgset("untaken_boosts_message_id_"+bracket, cfg.settings["untaken_boosts_message_id_"+bracket])
+                    logger.info(f"Deleting unnecessary untaken message: {message.id}")
+                    await message.delete()
+                    del message
+
+            for i, page in enumerate(untaken_bookings_pages):
+                for n, b in enumerate(page):
+                    booking_string = f'ID: ``{b.id}``Author: <@{b.authorid}> \n ' \
+                                     f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}`` {b.format_price_estimate()}\n ' \
+                                     f'Buyer info: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm.replace(" ", "%20")}/{b.buyer.name}) ' \
+                                     f'{cfg.settings[b.buyer.faction.lower() + "_emoji"]}' \
+                                     f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}\n' \
+                                     f'Notes: ``{b.notes}``'
+                    if untaken_boosts[(i * page_length) + n - 1].buyer.spec != b.buyer.spec:
+                        embed_title = f"\u200b\n{cfg.data['spec_emotes'][b.buyer.class_][b.buyer.spec]}__**{b.buyer.spec} {b.buyer.class_} bookings**__"
+                    else:
+                        embed_title = "\u200b"
+                    embed.add_field(name=embed_title, value=booking_string, inline=False)
+                if not embed.fields:
+                    embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
+                    break
+                if len(cls.untaken_messages[bracket]) > 0 and len(cls.untaken_messages[bracket])-1 >= i:
+                    await cls.untaken_messages[bracket][i].edit(embed=embed)
+                    logger.info(f"Edited untaken message: {cls.untaken_messages[bracket][i].id}")
+                    embed = base_embed("")
+                else:
+                    new_untaken_page = await cls.untaken_channel[bracket].send(embed=embed)
+                    logger.info(f"Created new untaken message {new_untaken_page.id}")
+                    embed = base_embed("")
+                    cls.untaken_messages[bracket].append(new_untaken_page)
+                    cfg.settings["untaken_boosts_message_id_"+bracket].append(new_untaken_page.id)
+                    cfg.cfgset("untaken_boosts_message_id_"+bracket, cfg.settings["untaken_boosts_message_id_"+bracket])
 
     @property
     def author(self) -> discord.User:
