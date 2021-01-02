@@ -47,6 +47,15 @@ class DataManager:
             logger.error(f"No settings named {key}")
             return False
 
+    def cfgupdate(self, key):
+        if key in self.settings.keys():
+            with open(self.configpath, "w") as f:
+                json.dump(self.settings, f, indent=4)
+            return True
+        else:
+            logger.error(f"No settings named {key}")
+            return False
+
     def validate(self):
         try:
             assert self.settings["discord_token"] != "YOUR_DISCORD_TOKEN", "a discord token"

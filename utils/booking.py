@@ -178,7 +178,7 @@ class Booking(object):
             if len(untaken_bookings_pages) < len(cls.untaken_messages[bracket]):
                 for message in cls.untaken_messages[bracket][len(untaken_bookings_pages):]:
                     cfg.settings["untaken_boosts_message_id_"+bracket].remove(message.id)
-                    cfg.cfgset("untaken_boosts_message_id_"+bracket, cfg.settings["untaken_boosts_message_id_"+bracket])
+                    cfg.cfgupdate("untaken_boosts_message_id_"+bracket)
                     logger.info(f"Deleting unnecessary untaken message: {message.id}")
                     await message.delete()
                     del message
@@ -209,7 +209,7 @@ class Booking(object):
                     embed = base_embed("")
                     cls.untaken_messages[bracket].append(new_untaken_page)
                     cfg.settings["untaken_boosts_message_id_"+bracket].append(new_untaken_page.id)
-                    cfg.cfgset("untaken_boosts_message_id_"+bracket, cfg.settings["untaken_boosts_message_id_"+bracket])
+                    cfg.cfgupdate("untaken_boosts_message_id_"+bracket)
 
     @property
     def author(self) -> discord.User:
