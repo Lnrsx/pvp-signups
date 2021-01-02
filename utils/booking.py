@@ -13,7 +13,6 @@ import asyncio
 import json
 import jsonpickle
 import random
-import math
 
 logger = get_logger("PvpSignups")
 statuses = ['Compiling', 'Posted', 'Pending (not uploaded)', 'Pending', 'Refund', 'Partial refund', 'Complete', 'Untaken']
@@ -53,7 +52,14 @@ class Booking(object):
     post_message: Optional[:class:`discord.Message`]
         The message that was posted about the booking in the designated post_bookings channel. Could be None.
     """
-    instances, post_channel_2v2, post_channel_3v3, post_channel_glad, request_channel, untaken_channel, untaken_message = [], None, None, None, None, None, None
+    instances = []
+    untaken_messages = []
+    client = None
+    post_channel_2v2 = None
+    post_channel_3v3 = None
+    post_channel_glad = None
+    request_channel = None
+    untaken_channel = None
 
     def __init__(self, bracket, author: discord.User):
         self.__class__.instances.append(self)
@@ -104,10 +110,13 @@ class Booking(object):
             await cls.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
         except discord.NotFound:
             raise exceptions.MessageNotFound("request_message")
-        try:
-            cls.untaken_message = await cls.untaken_channel.fetch_message(cfg.settings["untaken_boosts_message_id"])
-        except discord.NotFound:
-            raise exceptions.MessageNotFound("untaken_message")
+        for message_id in cfg.settings["untaken_boosts_message_id"]:
+            try:
+                cls.untaken_messages.append(await cls.untaken_channel.fetch_message(message_id))
+            except discord.NotFound:
+                cfg.settings["untaken_boosts_message_id"].remove(message_id)
+                cfg.cfgset("untaken_boosts_message_id", cfg.settings["untaken_boosts_message_id"])
+                logger.info("disgarding unlocatable untaken boost message ID")
         with open("data/bookings.json", "r") as f:
             cache = json.load(f)
             for _instance in cache.values():
@@ -154,20 +163,31 @@ class Booking(object):
     @classmethod
     async def update_untaken_boosts(cls):
         embed = base_embed(f"Type ``{cfg.settings['command_prefix']}take <ID> <mention teammate if 3v3>`` to claim a boost", title="Untaken boosts")
-        untaken_bookings = [b for b in cls.instances if b.status == 7]
-        pages_req = untaken_bookings / 15
-        for b in [b for b in cls.instances if b.status == 7][:15]:
-            booking_string = f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n ' \
-                             f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}``\n ' \
-                             f'Buyer name: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm}/{b.buyer.name})\n' \
-                             f'Buyer info: {cfg.settings[b.buyer.faction.lower() + "_emoji"]}``{b.buyer.faction}`` ' \
-                             f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}``{b.buyer.spec} {b.buyer.class_}`` \n' \
-                             f'Est. booster cut: {b.format_price_estimate()}\n ' \
-                             f'Notes: ``{b.notes}``\n\u200b'
-            embed.add_field(name=f"\n\u200b\nID: ``{b.id}``", value=booking_string, inline=False)
-        if not embed.fields:
-            embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
-        await cls.untaken_message.edit(embed=embed)
+        page_length = 10
+        untaken_boosts = [b for b in Booking.instances if b.status == 7]
+        untaken_bookings_pages = [untaken_boosts[i:i + page_length] for i in range(0, len(untaken_boosts), page_length)]
+        for i, page in enumerate(untaken_bookings_pages):
+            for b in page:
+                booking_string = f'Author: <@{b.authorid}> Status: ``{statuses[b.status]}``\n ' \
+                                 f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}``\n ' \
+                                 f'Buyer name: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm.replace(" ", "%20")}/{b.buyer.name})\n' \
+                                 f'Buyer info: {cfg.settings[b.buyer.faction.lower() + "_emoji"]}``{b.buyer.faction}`` ' \
+                                 f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}``{b.buyer.spec} {b.buyer.class_}`` \n' \
+                                 f'Est. booster cut: {b.format_price_estimate()}\n ' \
+                                 f'Notes: ``{b.notes}``\n\u200b'
+                embed.add_field(name=f"\n\u200b\nID: ``{b.id}``", value=booking_string, inline=False)
+            if not embed.fields:
+                embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
+                break
+            if len(cls.untaken_messages)-1 >= i:
+                await cls.untaken_messages[i].edit(embed=embed)
+                embed = base_embed("")
+            else:
+                new_untaken_page = await cls.untaken_channel.send(embed=embed)
+                embed = base_embed("")
+                cls.untaken_messages.append(new_untaken_page)
+                cfg.settings["untaken_boosts_message_id"].append(new_untaken_page.id)
+                cfg.cfgset("untaken_boosts_message_id", cfg.settings["untaken_boosts_message_id"])
 
     @property
     def author(self) -> discord.User:
@@ -323,7 +343,11 @@ class Booking(object):
                 return await self.pick_winner()
 
             self.booster.sec, self.booster.prim_cut, self.booster.sec_cut = winner_message.mentions[0].id, self.booster.prim_cut // 2, self.booster.prim_cut // 2
-            await self.post_channel_2v2.send(embed=base_embed(f"<@{self.booster.sec}> has been picked as {winner_user.mention}'s teammate"))
+            if self.type == "Gladiator":
+                post_channel = self.post_channel_glad
+            else:
+                post_channel = self.post_channel_3v3
+            await post_channel.send(embed=base_embed(f"<@{self.booster.sec}> has been picked as {winner_user.mention}'s teammate"))
 
         # post message is no longer relevent so is removed to save space in cache
         self.post_message = None
