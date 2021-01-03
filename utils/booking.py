@@ -177,11 +177,14 @@ class Booking(object):
             untaken_bookings_pages = [untaken_boosts[i:i + page_length] for i in range(0, len(untaken_boosts), page_length)]
             if len(untaken_bookings_pages) < len(cls.untaken_messages[bracket]):
                 for message in cls.untaken_messages[bracket][len(untaken_bookings_pages):]:
-                    cfg.settings["untaken_boosts_message_id_"+bracket].remove(message.id)
-                    cfg.cfgupdate("untaken_boosts_message_id_"+bracket)
-                    logger.info(f"Deleting unnecessary untaken message: {message.id}")
-                    await message.delete()
-                    del message
+                    try:
+                        cfg.settings["untaken_boosts_message_id_"+bracket].remove(message.id)
+                        cfg.cfgupdate("untaken_boosts_message_id_"+bracket)
+                        logger.info(f"Deleting unnecessary untaken message: {message.id}")
+                        await message.delete()
+                        del message
+                    except ValueError:
+                        logger.warning("Tried to delete untaken message that didnt exist")
 
             for i, page in enumerate(untaken_bookings_pages):
                 for n, b in enumerate(page):
@@ -307,7 +310,7 @@ class Booking(object):
                 reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "schedule"}
 
                 if not reactions["users"]:
-                    untaken_message = f'No users signed up to booking ``{self.id}``, it will be moved to {self.untaken_channel.mention}, to claim the boost, type: ``!take {self.id}`` '
+                    untaken_message = f'No users signed up to booking ``{self.id}``, it will be moved to {self.untaken_channel[self.bracket].mention}, to claim the boost, type: ``!take {self.id}`` '
                     if self.bracket == "2v2":
                         post_channel = self.post_channel_2v2
                     elif self.bracket == "3v3":
@@ -316,7 +319,7 @@ class Booking(object):
                             post_channel = self.post_channel_glad
                         else:
                             post_channel = self.post_channel_3v3
-                    untaken_message += f'in {self.untaken_channel.mention}'
+                    untaken_message += f'in {self.untaken_channel[self.bracket].mention}'
                     await post_channel.send(embed=base_embed(untaken_message))
                     await self.author.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
                     self.status = 7
@@ -467,7 +470,7 @@ class Booking(object):
             self, '**buyers character name** (e.g. Mystikdruldk)'
                   '\nor react with ❌ to cancel the booking', '❌')
         buyer_realm = await request.react_message(
-            self, '**buyers realm** (e.g. Ravencrest)'
+            self, '**buyers realm** (e.g. Ravencrest) \n**if realm name is multiple words you can use spaces**'
             '\nor react with ❌ to cancel the booking', '❌')
         self.buyer.name = buyer_name.lower()
         self.buyer.realm = buyer_realm.lower()

@@ -1,6 +1,7 @@
 from discord.ext import commands
 import discord
 from utils.misc import base_embed
+from utils.config import cfg
 from utils import exceptions
 from utils.booking import Booking, statuses
 from math import ceil
@@ -83,7 +84,7 @@ class AdminTools(commands.Cog):
     @commands.command(description="Deletes a booking")
     async def deletebooking(self, ctx, booking_id):
         booking = Booking.get(booking_id)
-        if ctx.message.author.server_permissions.administrator or ctx.message.author.id == booking.author.id:
+        if ctx.message.author.id in cfg.settings["managers"] or ctx.message.author.id == booking.author.id:
             booking.delete()
             await Booking.update_untaken_boosts()
             await ctx.send(embed=base_embed(f"Deleted booking ``{booking_id}``"))

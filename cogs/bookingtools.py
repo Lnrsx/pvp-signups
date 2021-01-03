@@ -35,7 +35,7 @@ class Bookings(commands.Cog):
 
     @commands.command(description="Take an untaken boost, must be in the untaken boosts channel")
     async def take(self, ctx, booking_id, partner: discord.User = None):
-        if not ctx.channel == Booking.untaken_channel:
+        if ctx.channel != Booking.untaken_channel["2v2"] and ctx.channel != Booking.untaken_channel["3v3"]:
             return
 
         await ctx.message.delete()
