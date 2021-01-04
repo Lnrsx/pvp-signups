@@ -13,6 +13,8 @@ import asyncio
 import json
 import jsonpickle
 import random
+import time
+import datetime
 
 logger = get_logger("PvpSignups")
 statuses = ['Compiling', 'Posted', 'Pending (not uploaded)', 'Pending', 'Refund', 'Partial refund', 'Complete', 'Untaken']
@@ -74,11 +76,9 @@ class Booking(object):
         self.ad_price_estimate = None
         self.price = 0
         self.booster = Booster()
-        self.payment_hash = None
-        self.gold_realms = None
         self.notes = None
         self.post_message = None
-        self.timestamp = None
+        self.timestamp = None  # placeholder so booking made before dont error
 
     @classmethod
     async def load(cls, client):
@@ -191,7 +191,7 @@ class Booking(object):
                                      f'Buyer info: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm.replace(" ", "%20")}/{b.buyer.name}) ' \
                                      f'{cfg.settings[b.buyer.faction.lower() + "_emoji"]}' \
                                      f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}\n' \
-                                     f'Notes: ``{b.notes}``'
+                                     f'Created: ``{datetime.datetime.utcfromtimestamp(b.timestamp).strftime("%d/%m %H:%M") if b.timestamp else "N/A"}`` \nNotes: ``{b.notes}``'
                     if untaken_boosts[(i * page_length) + n - 1].buyer.spec != b.buyer.spec:
                         embed_title = f"\u200b\n{cfg.data['spec_emotes'][b.buyer.class_][b.buyer.spec]}__**{b.buyer.spec} {b.buyer.class_} bookings**__"
                     else:
@@ -264,6 +264,7 @@ class Booking(object):
     async def post(self):
         """ `discord.Embed`: Posts the compiled booking in the post bookings channel."""
         logger.info(f"Posting {self.bracket} booking: {self.id}")
+        self.timestamp = time.time()
         embed = discord.Embed(
             title='New {} booking'.format(self.bracket),
             description='**ID:** ``{}``'.format(self.id),
@@ -649,31 +650,6 @@ class Booking(object):
             'or react with ❌ to cancel the booking', ['⏩', '❌'])
         self.notes = 'N/A' if self.notes == '⏩' else self.notes
 
-    async def get_gold_realms(self, force=False):
-        if force and self.gold_realms:
-            return
-        self.gold_realms = await request.react_message(
-            self, 'the **realm the gold was collected on**\n'
-            'if gold was collected on multiple realms, specify all of them seperated by commas\n'
-            '(e.g. Draenor, TarrenMill, Kazzak)', '', timeout=None)
-        send_gold_string, gold_realms_list = 'Gold realm(s) registered, do not send gold until the booking is complete\n', self.gold_realms.replace(" ", "").split(',')
-
-        # iterate through the user-entered realm seperated by commas
-        for realm in gold_realms_list:
-            # iterate through connected realm groups (1 group is a list of its own)
-            for x in cfg.data['connected_realms']:
-                # if one of the inputted realms matches a realm
-                if realm in cfg.data['realm_abbreviations'].keys():
-                    realm = cfg.data['realm_abbreviations'][realm]
-
-                if realm in x:
-                    # always uses the name of the first realm in the list (where the bank character is)
-                    send_gold_string += f"send **{realm}** gold to " \
-                                        f"**{cfg.data['bank_characters'][x[0]].format(cfg.settings['horde_emoji'], cfg.settings['alliance_emoji'])}**\n"
-                    break
-
-        await self.author.send(embed=base_embed(send_gold_string))
-
     async def refund_price(self) -> int:
         refund_amount = await request.react_message(self, "**the price of the boost** (after refund)", "")
         refund_amount = refund_amount.replace(",", "").replace(".", "")
@@ -684,21 +660,6 @@ class Booking(object):
         else:
             await self.author.send("Unrecognized format, please try again")
             return await self.refund_price()
-
-    async def get_payment_hash(self):
-        self.payment_hash = await request.react_message(self, "**the payment hash**")
-
-    def format_price_estimate(self, modifier=0.8):
-        if self.type == "Gladiator":
-            return "``See glad pricing``"
-        else:
-            if not self.ad_price_estimate:
-                self.ad_price_estimate = 0
-            boost_cut_recommendation = self.ad_price_estimate * modifier
-            price_estimate_string = f"{round(boost_cut_recommendation):,}g"
-            if self.type == 'Hourly':
-                price_estimate_string += "/hr"
-            return f"``{price_estimate_string}``"
 
     async def _recache_message(self):
         """Fetch the post message of the booking instance, used when the reaction on the message need to be rechecked"""
