@@ -661,6 +661,18 @@ class Booking(object):
             await self.author.send("Unrecognized format, please try again")
             return await self.refund_price()
 
+    def format_price_estimate(self, modifier=0.8):
+        if self.type == "Gladiator":
+            return "``See glad pricing``"
+        else:
+            if not self.ad_price_estimate:
+                self.ad_price_estimate = 0
+            boost_cut_recommendation = self.ad_price_estimate * modifier
+            price_estimate_string = f"{round(boost_cut_recommendation):,}g"
+            if self.type == 'Hourly':
+                price_estimate_string += "/hr"
+            return f"``{price_estimate_string}``"
+
     async def _recache_message(self):
         """Fetch the post message of the booking instance, used when the reaction on the message need to be rechecked"""
         if self.status == 1:
