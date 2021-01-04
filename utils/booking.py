@@ -263,6 +263,7 @@ class Booking(object):
 
     async def post(self):
         """ `discord.Embed`: Posts the compiled booking in the post bookings channel."""
+        logger.info(f"Posting {self.bracket} booking: {self.id}")
         embed = discord.Embed(
             title='New {} booking'.format(self.bracket),
             description='**ID:** ``{}``'.format(self.id),
@@ -343,7 +344,7 @@ class Booking(object):
             self.booster.prim = random.choices(
                 population=reactions["users"],
                 weights=[0.1 if user_weights[x] < 0 else user_weights[x] for x in reactions["users"]])[0]
-
+            logger.info(f"Picked {self.booster_prim.display_name} for booking: {self.id}")
             mention = ', **please mention your teammate**' \
                       f' within {round(cfg.settings["teammate_pick_timeout"] / 60)} minutes or the booking will be rerolled' if self.bracket == '3v3' else ''
             pick_message = f"<@{self.booster.prim}> was picked for {self.author.display_name}'s " \
