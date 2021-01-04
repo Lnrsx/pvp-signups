@@ -149,11 +149,7 @@ class Booking(object):
 
     @classmethod
     async def validate(cls):
-        """Validates all booking in the interal cache with their sheet counterparts
-        
-        .. note::
-        If the format bookings are loaded to the sheet is changed, this function's code must be updated
-        """
+        """Validates all booking in the interal cache with their sheet counterparts"""
         sheet = await sheets.grab_sheet()
         cachefields = [b.sheet_format() for b in cls.instances]
         not_on_sheet = [x for x in cachefields if x not in sheet and x[0] not in statuses[0:3]]
@@ -188,6 +184,7 @@ class Booking(object):
 
             for i, page in enumerate(untaken_bookings_pages):
                 for n, b in enumerate(page):
+                    edit_required = False
                     booking_string = f'ID: ``{b.id}``Author: <@{b.authorid}> \n ' \
                                      f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}`` {b.format_price_estimate()}\n ' \
                                      f'Buyer info: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm.replace(" ", "%20")}/{b.buyer.name}) ' \
@@ -198,13 +195,22 @@ class Booking(object):
                         embed_title = f"\u200b\n{cfg.data['spec_emotes'][b.buyer.class_][b.buyer.spec]}__**{b.buyer.spec} {b.buyer.class_} bookings**__"
                     else:
                         embed_title = "\u200b"
+                    if len(cls.untaken_messages[bracket]) > i and len(cls.untaken_messages[bracket][i].embeds[0].fields) > n:
+                        if booking_string != cls.untaken_messages[bracket][i].embeds[0].fields[n].value \
+                                or embed_title != cls.untaken_messages[bracket][i].embeds[0].fields[n].name:
+                            edit_required = True
+                    else:
+                        edit_required = True
                     embed.add_field(name=embed_title, value=booking_string, inline=False)
                 if not embed.fields:
                     embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
                     break
                 if len(cls.untaken_messages[bracket]) > 0 and len(cls.untaken_messages[bracket])-1 >= i:
-                    await cls.untaken_messages[bracket][i].edit(embed=embed)
-                    logger.info(f"Edited untaken message: {cls.untaken_messages[bracket][i].id}")
+                    if edit_required:
+                        await cls.untaken_messages[bracket][i].edit(embed=embed)
+                        logger.info(f"Edited untaken message: {cls.untaken_messages[bracket][i].id}")
+                    else:
+                        logger.info(f"Skipping editing untaken message: {cls.untaken_messages[bracket][i].id}")
                     embed = base_embed("")
                 else:
                     new_untaken_page = await cls.untaken_channel[bracket].send(embed=embed)

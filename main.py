@@ -5,7 +5,7 @@ from utils.misc import get_logger, base_embed
 from utils.request import request
 from utils.booking import Booking
 from utils import exceptions
-from utils.config import cfg
+from utils.config import cfg, devmode
 
 from discord.ext import commands
 import discord
@@ -30,7 +30,7 @@ class PvpSignups(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.members = True
-        super().__init__(command_prefix=cfg.settings['command_prefix'], intents=intents)
+        super().__init__(command_prefix=cfg.settings['command_prefix']if not devmode else "?", intents=intents)
         self.startup()
 
     async def on_ready(self):

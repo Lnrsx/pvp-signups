@@ -4,6 +4,7 @@ import os
 from socket import gethostname
 
 logger = get_logger("PvpSignups")
+devmode = gethostname() == 'DESKTOP-SKJPMQE'
 
 
 class DataManager:
@@ -11,8 +12,7 @@ class DataManager:
         #  Debug mode determines if the bot should validate it's own settings and files before startup.
         #  Once the bot is fully set up, this can be set to false to improve startup time
         self.debug = True
-        self.devmode = gethostname() == 'DESKTOP-SKJPMQE'
-        if self.devmode:
+        if devmode:
             logger.info("Running on Developer Mode")
             self.configpath = "devconfig.json"
         else:
