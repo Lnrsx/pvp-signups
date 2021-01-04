@@ -57,28 +57,6 @@ class Bookings(commands.Cog):
         booking.status = 3
         await Booking.update_untaken_boosts()
 
-    @commands.command(description="Marks a booking as complete")
-    async def done(self, ctx, booking_id):
-        booking = Booking.get(booking_id)
-        booking.authorized(ctx.message.author.id)
-        await booking.complete()
-
-    @commands.command(description="Marks a booking as partially or fully refunded")
-    async def refund(self, ctx, amount, booking_id):
-        if amount.lower() not in ['full', 'partial']:
-            raise exceptions.RequestFailed("Booking refund amount must be 'full' or 'partial'")
-        booking = Booking.get(booking_id)
-        booking.authorized(ctx.message.author.id)
-        await booking.refund(full=True if amount == 'full' else False)
-
-    @commands.command(description="Changes the registered gold realms of a booking")
-    async def setgoldrealm(self, ctx, booking_id):
-        booking = Booking.get(booking_id)
-        booking.authorized(ctx.message.author.id)
-        await booking.get_gold_realms()
-        if booking.status in range(3, 8):
-            await booking.update_sheet()
-
 
 def setup(client):
     client.add_cog(Bookings(client))
