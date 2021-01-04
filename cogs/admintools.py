@@ -86,8 +86,9 @@ class AdminTools(commands.Cog):
         booking = Booking.get(booking_id)
         if ctx.message.author.id in cfg.settings["managers"] or ctx.message.author.id == booking.author.id:
             booking.delete()
+            await ctx.message.author.send(embed=base_embed(f"Booking ``{booking_id}`` has been deleted, if it is on the untaken boosts board, it will be updated in a second"))
+            await ctx.message.delete()
             await Booking.update_untaken_boosts()
-            await ctx.send(embed=base_embed(f"Deleted booking ``{booking_id}``"))
         else:
             raise exceptions.RequestFailed("You do not have permission to do that")
 

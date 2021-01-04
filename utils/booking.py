@@ -78,6 +78,7 @@ class Booking(object):
         self.gold_realms = None
         self.notes = None
         self.post_message = None
+        self.timestamp = None
 
     @classmethod
     async def load(cls, client):
@@ -380,8 +381,7 @@ class Booking(object):
                 post_channel = self.post_channel_3v3
             await post_channel.send(embed=base_embed(f"<@{self.booster.sec}> has been picked as {winner_user.mention}'s teammate"))
 
-        # post message is no longer relevent so is removed to save space in cache
-        self.post_message = None
+        self.post_message = self.post_message.id
         if self.booster.prim_cut > 100000:
             for key in user_weights.keys():
                 if key == self.booster.prim:
