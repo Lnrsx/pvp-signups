@@ -99,9 +99,14 @@ class PvpSignups(commands.Bot):
         logger.info("Beginning booking cleanup...")
         ts = time.time()
         for b in Booking.instances:
-            if not b.timestamp or b.timestamp < (ts + 172800):  # 2 days in seconds
+            if not b.timestamp or (b.timestamp + 172800) < ts:  # 2 days in seconds
                 logger.info(f"Deleted expired booking: {b.id}")
+                await b.author.send(
+                    embed=base_embed(f"Your booking with ID ``{b.id}`` for ``{b.buyer.name}-{b.buyer.realm} "
+                                     f"{b.bracket} {b.type} {b.buyer.rating}`` has expired from the expired bookings board, "
+                                     f"if the buyer still wants a boost, you can create the booking again"))
                 b.delete()
+        await Booking.update_untaken_boosts()
         logger.info("Finished booking cleanup")
 
     async def on_command_error(self, ctx, error):

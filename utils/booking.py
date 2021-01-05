@@ -208,8 +208,12 @@ class Booking(object):
                     break
                 if len(cls.untaken_messages[bracket]) > 0 and len(cls.untaken_messages[bracket])-1 >= i:
                     if edit_required:
-                        await cls.untaken_messages[bracket][i].edit(embed=embed)
-                        logger.info(f"Edited untaken message: {cls.untaken_messages[bracket][i].id}")
+                        try:
+                            await cls.untaken_messages[bracket][i].edit(embed=embed)
+                            logger.info(f"Edited untaken message: {cls.untaken_messages[bracket][i].id}")
+                        except discord.NotFound:
+                            logger.error("Tried to edit a message that was not there")
+                            await cls.untaken_messages[bracket].remove(i)
                     else:
                         logger.info(f"Skipping editing untaken message: {cls.untaken_messages[bracket][i].id}")
                     embed = base_embed("")
@@ -313,13 +317,13 @@ class Booking(object):
             await self._recache_message()
             reactions = await [i.users() for i in self.post_message.reactions if str(i.emoji) == cfg.settings["take_emoji"]][0].flatten()
             reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "now"}
-            await self.post_message.clear_reactions()
             if not reactions["users"]:
                 reactions = await [i.users() for i in self.post_message.reactions if str(i.emoji) == cfg.settings["schedule_emoji"]][0].flatten()
                 reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "schedule"}
 
                 if not reactions["users"]:
                     untaken_message = f'No users signed up to booking ``{self.id}``, it will be moved to {self.untaken_channel[self.bracket].mention}, to claim the boost, type: ``!take {self.id}`` '
+                    await self.post_message.clear_reactions()
                     if self.bracket == "2v2":
                         post_channel = self.post_channel_2v2
                     elif self.bracket == "3v3":
@@ -336,7 +340,7 @@ class Booking(object):
                     self.cache()
                     await self.update_untaken_boosts()
                     raise exceptions.BookingUntaken
-
+            await self.post_message.clear_reactions()
             weight_file = json.load(open(f'data/userweights.json', 'r'))
             user_weights = weight_file[self.bracket]
             for user in [x for x in reactions["users"] if x not in user_weights.keys()]:
@@ -345,7 +349,6 @@ class Booking(object):
             self.booster.prim = random.choices(
                 population=reactions["users"],
                 weights=[0.1 if user_weights[x] < 0 else user_weights[x] for x in reactions["users"]])[0]
-            logger.info(f"Picked {self.booster_prim.display_name} for booking: {self.id}")
             mention = ', **please mention your teammate**' \
                       f' within {round(cfg.settings["teammate_pick_timeout"] / 60)} minutes or the booking will be rerolled' if self.bracket == '3v3' else ''
             pick_message = f"<@{self.booster.prim}> was picked for {self.author.display_name}'s " \

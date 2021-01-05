@@ -92,6 +92,12 @@ class AdminTools(commands.Cog):
         else:
             raise exceptions.RequestFailed("You do not have permission to do that")
 
+    @commands.has_permissions(administrator=True)
+    @commands.command()
+    async def updateuntaken(self, ctx):
+        await Booking.update_untaken_boosts()
+        await ctx.send(embed=base_embed("Done"))
+
 
 def setup(client):
     client.add_cog(AdminTools(client))
