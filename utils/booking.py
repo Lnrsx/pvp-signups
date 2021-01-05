@@ -108,7 +108,7 @@ class Booking(object):
             cls.untaken_channel["2v2"] = commands.Bot.get_channel(cls.client, cfg.settings["untaken_boosts_channel_id_2v2"])
         if cls.untaken_channel["3v3"] is None:
             cls.untaken_channel["3v3"] = commands.Bot.get_channel(cls.client, cfg.settings["untaken_boosts_channel_id_3v3"])
-        if not cls.request_channel or not cls.post_channel_2v2 or not cls.untaken_channel["2v2"] or not cls.untaken_channel["3v3"]:
+        if not cls.request_channel or not cls.post_channel_2v2 or not cls.post_channel_3v3 or not cls.post_channel_glad or not cls.untaken_channel["2v2"] or not cls.untaken_channel["3v3"]:
             raise exceptions.ChannelNotFound
         try:
             await cls.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
@@ -244,6 +244,16 @@ class Booking(object):
             return self._author.id
         return self._author
 
+    @property
+    def post_channel(self):
+        if self.bracket == "2v2":
+            return self.post_channel_2v2
+        elif self.bracket == "3v3":
+            if self.type == "Gladiator":
+                return self.post_channel_glad
+            else:
+                return self.post_channel_3v3
+
     async def create(self):
         try:
             await self.compile()
@@ -288,13 +298,7 @@ class Booking(object):
             mention = cfg.settings["alliance_role"]
         else:
             mention = ''
-        if self.bracket == "2v2":
-            self.post_message = await self.post_channel_2v2.send(mention, embed=embed)
-        elif self.bracket == "3v3":
-            if self.type == "Gladiator":
-                self.post_message = await self.post_channel_glad.send(mention, embed=embed)
-            else:
-                self.post_message = await self.post_channel_3v3.send(mention, embed=embed)
+        self.post_message = await self.post_channel.send(mention, embed=embed)
         await self.author.send(embed=base_embed(
             f'Booking has been sent! booking ID is: ``{self.id}``'))
         await self.post_message.add_reaction(cfg.settings["take_emoji"])
@@ -324,16 +328,10 @@ class Booking(object):
                 if not reactions["users"]:
                     untaken_message = f'No users signed up to booking ``{self.id}``, it will be moved to {self.untaken_channel[self.bracket].mention}, to claim the boost, type: ``!take {self.id}`` '
                     await self.post_message.clear_reactions()
-                    if self.bracket == "2v2":
-                        post_channel = self.post_channel_2v2
-                    elif self.bracket == "3v3":
+                    if self.bracket == "3v3":
                         untaken_message += '<Mention teammate> '
-                        if self.type == "Gladiator":
-                            post_channel = self.post_channel_glad
-                        else:
-                            post_channel = self.post_channel_3v3
                     untaken_message += f'in {self.untaken_channel[self.bracket].mention}'
-                    await post_channel.send(embed=base_embed(untaken_message))
+                    await self.post_channel.send(embed=base_embed(untaken_message))
                     await self.author.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
                     self.status = 7
                     self.post_message = None
@@ -353,13 +351,7 @@ class Booking(object):
                       f' within {round(cfg.settings["teammate_pick_timeout"] / 60)} minutes or the booking will be rerolled' if self.bracket == '3v3' else ''
             pick_message = f"<@{self.booster.prim}> was picked for {self.author.display_name}'s " \
                            f"``{self.bracket} {self.type} {self.buyer.rating}`` boost ({reactions['time']}){mention}"
-            if self.bracket == "2v2":
-                await self.post_channel_2v2.send(pick_message)
-            elif self.bracket == "3v3":
-                if self.type == "Gladiator":
-                    await self.post_channel_glad.send(pick_message)
-                else:
-                    await self.post_channel_3v3.send(pick_message)
+            await self.post_channel.send(pick_message)
         else:
             return False
 
@@ -374,7 +366,7 @@ class Booking(object):
             except asyncio.TimeoutError:
                 embed = self.post_message.embeds[0]
                 embed.title = f"Rerolled {self.bracket} Bookings"
-                self.post_message = await self.post_channel_2v2.send(embed=embed)
+                self.post_message = await self.post_channel.send(embed=embed)
                 await self.post_message.add_reaction(cfg.settings["take_emoji"])
                 await self.post_message.add_reaction(cfg.settings["schedule_emoji"])
                 return await self.pick_winner()
@@ -679,13 +671,7 @@ class Booking(object):
     async def _recache_message(self):
         """Fetch the post message of the booking instance, used when the reaction on the message need to be rechecked"""
         if self.status == 1:
-            if self.bracket == "2v2":
-                self.post_message = await self.post_channel_2v2.fetch_message(self.post_message.id)
-            elif self.bracket == "3v3":
-                if self.type == "Gladiator":
-                    self.post_message = await self.post_channel_glad.fetch_message(self.post_message.id)
-                else:
-                    self.post_message = await self.post_channel_3v3.fetch_message(self.post_message.id)
+            self.post_message = await self.post_channel.fetch_message(self.post_message.id)
 
     async def _status_update(self):
         await self.author.send(embed=base_embed(f"Booking ``{self.id}`` has been set to ``{statuses[self.status]}``"))
