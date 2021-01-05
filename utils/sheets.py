@@ -7,6 +7,12 @@ from utils.config import cfg
 
 logger = get_logger(__name__)
 
+# ---------------------------------------------------------------------------
+#
+# This file is no longer in use, as payments are handled by another bot
+#
+# ---------------------------------------------------------------------------
+
 
 class SheetManager:
     """Represents a GSpread client manager
