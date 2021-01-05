@@ -661,7 +661,7 @@ class Booking(object):
             await self.author.send("Unrecognized format, please try again")
             return await self.refund_price()
 
-    def format_price_estimate(self, modifier=0.8):
+    def format_price_estimate(self, modifier=cfg.settings["booster_cut"]):
         if self.type == "Gladiator":
             return "``See glad pricing``"
         else:

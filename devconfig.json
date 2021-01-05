@@ -30,9 +30,9 @@
     "horde_emoji": "<:Horde:783398828173688832>",
     "alliance_emoji": "<:Alliance:783398775376314408>",
     "choose_faction_emoji": "<:choosefaction:783398847740903424>",
-    "booster_cut": 0.8,
-    "advertiser_cut": 0.15,
-    "management_cut": 0.05,
+    "booster_cut": 0.77,
+    "advertiser_cut": 0.11,
+    "management_cut": 0.12,
     "google_sheet_id": "1jV0xyaXeJNM-Bz9yvEakIUuPz35Etsak6gqEXBu0w0Q",
     "worksheet_index": 0,
     "managers": [
