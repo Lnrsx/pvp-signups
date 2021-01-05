@@ -7,13 +7,14 @@ from utils.booking import Booking
 from utils import exceptions
 from utils.config import cfg, devmode
 
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 
 import os
 import sys
 import traceback
 import json
+import time
 from inspect import Parameter
 
 logger = get_logger('PvpSignups')
@@ -36,6 +37,7 @@ class PvpSignups(commands.Bot):
     async def on_ready(self):
         try:
             await Booking.load(self)
+            self.cleanup.start()
             await Booking.update_untaken_boosts()
             if cfg.settings['auto_faction_class_input']:
                 await request.token('wowapi')
@@ -91,6 +93,16 @@ class PvpSignups(commands.Bot):
                 booking.cache()
         logger.info("All bookings have been cached, shutting down")
         exit()
+
+    @tasks.loop(minutes=5.0)
+    async def cleanup(self):
+        logger.info("Beginning booking cleanup...")
+        ts = time.time()
+        for b in Booking.instances:
+            if not b.timestamp or b.timestamp < (ts + 172800):  # 2 days in seconds
+                logger.info(f"Deleted expired booking: {b.id}")
+                b.delete()
+        logger.info("Finished booking cleanup")
 
     async def on_command_error(self, ctx, error):
         if hasattr(ctx.command, 'on_error'):

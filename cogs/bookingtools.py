@@ -1,9 +1,10 @@
-import discord
 from discord.ext import commands
 from utils.booking import Booking
 from utils import exceptions
 from utils.config import cfg
 from utils.misc import base_embed, get_logger
+
+import discord
 
 logger = get_logger("PvpSignups")
 
