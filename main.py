@@ -79,9 +79,6 @@ class PvpSignups(commands.Bot):
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
                 self.load_extension(f'cogs.{filename[:-3]}')
-        self.remove_command("done")
-        self.remove_command("refund")
-        self.remove_command("setgoldrealm")
 
     @staticmethod
     async def tryrestart():
@@ -94,17 +91,17 @@ class PvpSignups(commands.Bot):
         logger.info("All bookings have been cached, shutting down")
         exit()
 
-    @tasks.loop(minutes=5.0)
+    @tasks.loop(hours=1)
     async def cleanup(self):
         logger.info("Beginning booking cleanup...")
         ts = time.time()
         for b in Booking.instances:
             if not b.timestamp or (b.timestamp + 172800) < ts:  # 2 days in seconds
                 logger.info(f"Deleted expired booking: {b.id}")
-                await b.author.send(
-                    embed=base_embed(f"Your booking with ID ``{b.id}`` for ``{b.buyer.name}-{b.buyer.realm} "
-                                     f"{b.bracket} {b.type} {b.buyer.rating}`` has expired from the expired bookings board, "
-                                     f"if the buyer still wants a boost, you can create the booking again"))
+                # await b.author.send(
+                #     embed=base_embed(f"Your booking with ID ``{b.id}`` for ``{b.buyer.name}-{b.buyer.realm} "
+                #                     f"{b.bracket} {b.type} {b.buyer.rating}`` has expired from the expired bookings board, "
+                #                     f"if the buyer still wants a boost, you can create the booking again"))
                 b.delete()
         await Booking.update_untaken_boosts()
         logger.info("Finished booking cleanup")

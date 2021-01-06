@@ -8,6 +8,7 @@ from utils.sheets import sheets
 from discord.ext import commands
 import discord
 
+import string
 import uuid
 import asyncio
 import json
@@ -213,7 +214,6 @@ class Booking(object):
                             logger.info(f"Edited untaken message: {cls.untaken_messages[bracket][i].id}")
                         except discord.NotFound:
                             logger.error("Tried to edit a message that was not there")
-                            await cls.untaken_messages[bracket].remove(i)
                     else:
                         logger.info(f"Skipping editing untaken message: {cls.untaken_messages[bracket][i].id}")
                     embed = base_embed("")
@@ -284,7 +284,7 @@ class Booking(object):
             description='**ID:** ``{}``'.format(self.id),
             colour=discord.Colour.purple())
         embed.set_author(name=self.author.display_name, icon_url=self.author.avatar_url)
-        embed.add_field(name='Buyer Name', value=f'[{self.buyer.name}-{self.buyer.realm}](https://check-pvp.fr/eu/{self.buyer.realm.replace(" ", "%20")}/{self.buyer.name})')
+        embed.add_field(name='Buyer Name', value=f'[{self.buyer.name}-{self.buyer.realm}](https://check-pvp.fr/eu/{string.capwords(self.buyer.realm.replace(" ", "%20"))}/{string.capwords(self.buyer.name)})')
         embed.add_field(name='Boost type', value=f"``{self.type}``")
         embed.add_field(name='Est. booster cut', value=self.format_price_estimate())
         embed.add_field(name='Buyer faction', value=f"{cfg.settings[self.buyer.faction.lower() + '_emoji']}``{self.buyer.faction}``")
@@ -382,10 +382,10 @@ class Booking(object):
         if self.booster.prim_cut > 100000:
             for key in user_weights.keys():
                 if key == self.booster.prim:
-                    user_weights[key] = round(user_weights[key] - (self.booster.prim_cut * cfg.settings["bad_luck_protection_mofifier"]), 2)
+                    user_weights[key] = round(user_weights[key] - (self.booster.prim_cut * cfg.settings["bad_luck_protection_mofifier"]), 5)
 
                 else:
-                    user_weights[key] = round(user_weights[key] + (self.booster.prim_cut * cfg.settings["bad_luck_protection_mofifier"]), 2)
+                    user_weights[key] = round(user_weights[key] + (self.booster.prim_cut * cfg.settings["bad_luck_protection_mofifier"]), 5)
         weight_file[self.bracket] = user_weights
         json.dump(weight_file, open(f'data/userweights.json', 'w'), indent=4)
         self.status = 2
@@ -430,21 +430,19 @@ class Booking(object):
          """
         with open("data/bookings.json", "r") as f:
             data = json.load(f)
-        with open("data/bookings.json", "w") as f:
-            temp_author = self._author
-            if isinstance(self._author, discord.User):
-                self._author = self._author.id
-            data[str(self.id)] = jsonpickle.encode(self)
-            json.dump(data, f, indent=4)
-            self._author = temp_author
+        temp_author = self._author
+        if isinstance(self._author, discord.User):
+            self._author = self._author.id
+        data[str(self.id)] = jsonpickle.encode(self)
+        json.dump(data, open("data/bookings.json", "w"), indent=4)
+        self._author = temp_author
 
     def delete(self):
         """Deletes the booking from the interal instance cache and the external file at data/bookings.json"""
         if self.status not in range(2):
-            with open("data/bookings.json", "r") as f:
-                data = json.load(f)
+            data = json.load(open("data/bookings.json", "r"))
+            del data[str(self.id)]
             with open("data/bookings.json", "w") as f:
-                del data[str(self.id)]
                 json.dump(data, f, indent=4)
         logger.info(f"Booking {self.id} has been deleted")
         for i, obj in enumerate(self.instances):
@@ -479,7 +477,7 @@ class Booking(object):
         self.buyer.realm = buyer_realm.lower()
         if cfg.settings["auto_faction_class_input"]:
             response = await request.get(
-                f'https://eu.api.blizzard.com/profile/wow/character/{self.buyer.realm}/{self.buyer.name}?namespace=profile-eu&locale=en_GB', token=True)
+                f'https://eu.api.blizzard.com/profile/wow/character/{self.buyer.realm.replace(" ", "-")}/{self.buyer.name}?namespace=profile-eu&locale=en_GB', token=True)
             if response['status'] == 200:
                 self.buyer.faction, self.buyer.class_ = response['body']['faction']['name'], response['body']['character_class']['name'].capitalize()
                 self.buyer.name = buyer_name
