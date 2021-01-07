@@ -441,13 +441,16 @@ class Booking(object):
         """Deletes the booking from the interal instance cache and the external file at data/bookings.json"""
         if self.status not in range(2):
             data = json.load(open("data/bookings.json", "r"))
-            del data[str(self.id)]
-            with open("data/bookings.json", "w") as f:
-                json.dump(data, f, indent=4)
-        logger.info(f"Booking {self.id} has been deleted")
+            if self.id not in data.keys():
+                logger.warning("Tried to delete bookings not in cache")
+            else:
+                del data[self.id]
+                with open("data/bookings.json", "w") as f:
+                    json.dump(data, f, indent=4)
         for i, obj in enumerate(self.instances):
             if obj.id == self.id:
                 del self.instances[i]
+        logger.info(f"Booking {self.id} has been deleted")
 
     async def _get_boost_type(self, force=False):
         if not force and self.type:
