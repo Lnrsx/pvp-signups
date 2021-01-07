@@ -1,0 +1,11 @@
+2021-01-07 15:01:07,694:INFO:PvpSignups: Running on Developer Mode
+2021-01-07 15:01:11,111:INFO:PvpSignups: Successfully located request channel
+2021-01-07 15:01:11,111:INFO:PvpSignups: 0 booking(s) have been loaded from the cache
+2021-01-07 15:01:11,111:INFO:PvpSignups: Bot is ready
+2021-01-07 15:01:11,112:INFO:PvpSignups: Beginning booking cleanup...
+2021-01-07 15:01:11,112:INFO:PvpSignups: Finished booking cleanup
+2021-01-07 15:01:22,831:INFO:PvpSignups: Booking being created by Lunarus
+2021-01-07 15:03:12,715:INFO:PvpSignups: Booking 6992512007 has been deleted
+2021-01-07 15:03:22,673:INFO:PvpSignups: Booking being created by Lunarus
+2021-01-07 15:03:42,283:INFO:PvpSignups: Posting 2v2 booking: 1649022494
+2021-01-07 15:03:54,879:INFO:PvpSignups: Created new untaken message 796756011746590730

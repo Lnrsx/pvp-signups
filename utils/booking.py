@@ -78,7 +78,7 @@ class Booking(object):
         self.booster = Booster()
         self.notes = None
         self.post_message = None
-        self.timestamp = None  # placeholder so booking made before dont error
+        self.timestamp = None
 
     @classmethod
     async def load(cls, client):
