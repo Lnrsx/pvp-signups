@@ -3,7 +3,6 @@ from utils.misc import base_embed, get_logger
 from utils.request import request
 from utils import exceptions
 from utils.config import cfg
-from utils.sheets import sheets
 
 from discord.ext import commands
 import discord
