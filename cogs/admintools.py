@@ -96,7 +96,7 @@ class AdminTools(commands.Cog):
     @commands.command()
     async def updateuntaken(self, ctx):
         await Booking.update_untaken_boosts()
-        await ctx.send(embed=base_embed("Done"))
+        await ctx.send("👍")
 
 
 def setup(client):
