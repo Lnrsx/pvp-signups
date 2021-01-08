@@ -53,7 +53,8 @@ class Bookings(commands.Cog):
                 return
         await booking.author.send(embed=base_embed(f"You booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm} {booking.bracket} {booking.type} {booking.buyer.rating}``"
                                                    f"\n has been claimed by {ctx.message.author.display_name}"))
-        await ctx.message.author.send(embed=base_embed(f"You have claimed booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm}`` ``{booking.bracket} {booking.type} {booking.buyer.rating}``"))
+        await ctx.message.author.send(embed=base_embed(f"You have claimed booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm}`` ``{booking.bracket} {booking.type} {booking.buyer.rating}\n"
+                                                       f"**Message {booking.author.mention} before you start, as they will most likely have to collect the gold**``"))
         logger.info(f"Booking {booking.id} has been claimed by {booking.booster.prim}")
         booking.status = 3
         await Booking.update_untaken_boosts()

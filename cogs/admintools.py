@@ -101,10 +101,6 @@ class AdminTools(commands.Cog):
         await Booking.update_untaken_boosts()
         await ctx.send("👍")
 
-    @commands.command()
-    async def cleanup(self, ctx):
-        await Booking.cleanup()
-
 
 def setup(client):
     client.add_cog(AdminTools(client))

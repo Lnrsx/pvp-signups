@@ -91,7 +91,7 @@ class PvpSignups(commands.Bot):
 
     @tasks.loop(hours=1)
     async def cleanup(self):
-        pass
+        await Booking.cleanup()
 
     async def on_command_error(self, ctx, error):
         if hasattr(ctx.command, 'on_error'):
