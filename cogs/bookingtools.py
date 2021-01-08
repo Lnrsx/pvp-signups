@@ -58,6 +58,38 @@ class Bookings(commands.Cog):
         booking.status = 3
         await Booking.update_untaken_boosts()
 
+    @commands.command()
+    async def rebook(self, ctx, message_id: int):
+        message = None
+        for bracket, channel in zip(["2v2", "3v3", "3v3"], [Booking.post_channel_2v2, Booking.post_channel_3v3, Booking.post_channel_glad]):
+            try:
+                message = await channel.fetch_message(message_id)
+                break
+            except discord.NotFound:
+                pass
+        if not message:
+            await ctx.send(embed=base_embed("No booking message found with that ID, it was probably deleted"))
+            return
+        fields = message.embeds[0].fields
+        b = Booking(bracket, ctx.message.author)
+        b.status = 7
+        b.type = fields[1].value.replace("``", "")
+        b.buyer.name, b.buyer.realm = fields[0].value[fields[0].value.find("[") + 1:fields[0].value.find("]")].split("-")
+        b.buyer.faction = fields[3].value[fields[3].value.find("``")+2:fields[3].value.rfind("``")]
+        b.buyer.rating = fields[4].value[fields[4].value.find("``")+2:fields[4].value.rfind("``")]
+        spec_emote = fields[5].value[fields[5].value.find("<"):fields[5].value.find(">")+1]
+        b.buyer.spec, b.buyer.class_ = cfg.spec_from_emote(spec_emote)
+        price_str = fields[2].value[fields[2].value.find("``") + 2:fields[2].value.rfind("``")].replace(",", "").replace("g", "")
+        if price_str.isnumeric():
+            b.ad_price_estimate = int(price_str) / cfg.settings["booster_cut"]
+        else:
+            b.ad_price_estimate = 0
+        b.notes = fields[6].value[fields[6].value.find("``") + 2:fields[6].value.rfind("``")]
+        b.post_message = message_id
+        b.cache()
+        await Booking.update_untaken_boosts()
+        await ctx.send(embed=base_embed(f"Booking has been reposted with new ID: ``{b.id}``"))
+
 
 def setup(client):
     client.add_cog(Bookings(client))

@@ -78,7 +78,7 @@ class Booking(object):
         self.booster = Booster()
         self.notes = None
         self.post_message = None
-        self.timestamp = None
+        self.timestamp = time.time()
 
     @classmethod
     async def load(cls, client):
@@ -196,13 +196,14 @@ class Booking(object):
                         embed_title = f"\u200b\n{cfg.data['spec_emotes'][b.buyer.class_][b.buyer.spec]}__**{b.buyer.spec} {b.buyer.class_} bookings**__"
                     else:
                         embed_title = "\u200b"
-                    if len(cls.untaken_messages[bracket]) > i and len(cls.untaken_messages[bracket][i].embeds[0].fields) > n:
-                        if booking_string != cls.untaken_messages[bracket][i].embeds[0].fields[n].value \
-                                or embed_title != cls.untaken_messages[bracket][i].embeds[0].fields[n].name:
-                            edit_required = True
-                    else:
+                    if not (len(cls.untaken_messages[bracket]) > i and len(cls.untaken_messages[bracket][i].embeds[0].fields) > n):
+                        edit_required = True
+                    elif booking_string != cls.untaken_messages[bracket][i].embeds[0].fields[n].value \
+                            or embed_title != cls.untaken_messages[bracket][i].embeds[0].fields[n].name:
                         edit_required = True
                     embed.add_field(name=embed_title, value=booking_string, inline=False)
+                if len(cls.untaken_messages[bracket]) >= i or len(embed.fields) != len(cls.untaken_messages[bracket][i].embeds[0].fields):
+                    edit_required = True
                 if not embed.fields:
                     embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
                     break
@@ -223,6 +224,24 @@ class Booking(object):
                     cls.untaken_messages[bracket].append(new_untaken_page)
                     cfg.settings["untaken_boosts_message_id_"+bracket].append(new_untaken_page.id)
                     cfg.cfgupdate("untaken_boosts_message_id_"+bracket)
+
+    @classmethod
+    async def cleanup(cls):
+        logger.info("Beginning booking cleanup...")
+        ts = time.time()
+        expired = []
+        for i, b in enumerate(cls.instances):
+            if (b.timestamp + 172800) < ts:  # 2 days in seconds
+                if isinstance(b.post_message, int):
+                    await b.author.send(
+                        embed=base_embed(f"Your booking with ID ``{b.id}`` for ``{b.buyer.name}-{b.buyer.realm} "
+                                         f""f"{b.bracket} {b.type} {b.buyer.rating}`` has expired from the expired bookings board, "
+                                         f"if the buyer still wants a boost, **DM me** ``!rebook {b.post_message}``"))
+                expired.append(b)
+        # no idea why but it needs to be like this or it only cleans first 2 expired
+        [b.delete() for b in expired]
+        await Booking.update_untaken_boosts()
+        logger.info("Finished booking cleanup")
 
     @property
     def author(self) -> discord.User:
@@ -277,7 +296,6 @@ class Booking(object):
     async def post(self):
         """ `discord.Embed`: Posts the compiled booking in the post bookings channel."""
         logger.info(f"Posting {self.bracket} booking: {self.id}")
-        self.timestamp = time.time()
         embed = discord.Embed(
             title='New {} booking'.format(self.bracket),
             description='**ID:** ``{}``'.format(self.id),

@@ -56,6 +56,12 @@ class DataManager:
             logger.error(f"No settings named {key}")
             return False
 
+    def spec_from_emote(self, spec_emote):
+        for cls, specs in self.data["spec_emotes"].items():
+            for spec, emote in specs.items():
+                if emote == spec_emote:
+                    return spec, cls
+
     def validate(self):
         try:
             assert self.settings["discord_token"] != "YOUR_DISCORD_TOKEN", "a discord token"

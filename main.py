@@ -14,7 +14,6 @@ import os
 import sys
 import traceback
 import json
-import time
 from inspect import Parameter
 
 logger = get_logger('PvpSignups')
@@ -37,7 +36,6 @@ class PvpSignups(commands.Bot):
     async def on_ready(self):
         try:
             await Booking.load(self)
-            self.cleanup.start()
             await Booking.update_untaken_boosts()
             if cfg.settings['auto_faction_class_input']:
                 await request.token('wowapi')
@@ -65,8 +63,8 @@ class PvpSignups(commands.Bot):
         except exceptions.InvalidTokenResponse:
             cfg.cfgset("auto_faction_class_input", False)
             logger.warning("Bot could not get a blizzard API access token, automatic faction/class input has been disabled")
-
         logger.info("Bot is ready")
+        self.cleanup.start()
 
     def startup(self):
         """Performs the necessary checks on file integrity and loads cogs, must be called or the bot will not have any commands"""
@@ -93,18 +91,7 @@ class PvpSignups(commands.Bot):
 
     @tasks.loop(hours=1)
     async def cleanup(self):
-        logger.info("Beginning booking cleanup...")
-        ts = time.time()
-        for b in Booking.instances:
-            if not b.timestamp or (b.timestamp + 172800) < ts:  # 2 days in seconds
-                logger.info(f"Deleted expired booking: {b.id}")
-                await b.author.send(
-                    embed=base_embed(f"Your booking with ID ``{b.id}`` for ``{b.buyer.name}-{b.buyer.realm} "
-                                     f"{b.bracket} {b.type} {b.buyer.rating}`` has expired from the expired bookings board, "
-                                     f"if the buyer still wants a boost, you can create the booking again"))
-                b.delete()
-        await Booking.update_untaken_boosts()
-        logger.info("Finished booking cleanup")
+        pass
 
     async def on_command_error(self, ctx, error):
         if hasattr(ctx.command, 'on_error'):

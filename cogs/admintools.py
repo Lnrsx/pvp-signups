@@ -1,10 +1,13 @@
 from discord.ext import commands
 import discord
-from utils.misc import base_embed
+from utils.misc import base_embed, get_logger
 from utils.config import cfg
 from utils import exceptions
 from utils.booking import Booking, statuses
 from math import ceil
+import time
+
+logger = get_logger('PvpSignups')
 
 
 class AdminTools(commands.Cog):
@@ -97,6 +100,10 @@ class AdminTools(commands.Cog):
     async def updateuntaken(self, ctx):
         await Booking.update_untaken_boosts()
         await ctx.send("👍")
+
+    @commands.command()
+    async def cleanup(self, ctx):
+        await Booking.cleanup()
 
 
 def setup(client):
