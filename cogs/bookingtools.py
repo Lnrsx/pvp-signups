@@ -1,7 +1,7 @@
 from discord.ext import commands
 from utils.booking import Booking
 from utils import exceptions
-from utils.config import cfg
+from utils.config import cfg, icfg, data
 from utils.misc import base_embed, get_logger
 
 import discord
@@ -18,13 +18,13 @@ class Bookings(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, reaction):
-        cond1 = reaction.channel_id == cfg.settings["request_booking_channel_id"]
-        cond2 = reaction.message_id == cfg.settings["request_booking_message_id"]
-        cond3 = reaction.emoji.name in [cfg.settings["twos_emoji"], cfg.settings["threes_emoji"]]
-        cond4 = reaction.user_id != self.client.user.id
+        cond1 = False  # TODO
+        cond2 = False  # TODO
+        cond3 = False  # TODO
+        cond4 = False  # TODO
         if cond1 and cond2 and cond3 and cond4:
             author = commands.Bot.get_user(self.client, reaction.user_id)
-            bracket = '2v2' if reaction.emoji.name == cfg.settings["twos_emoji"] else '3v3'
+            bracket = '2v2' if reaction.emoji.name == cfg.twos_emoji else '3v3'
             booking = Booking(bracket, author)
             message = await Booking.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
             await message.remove_reaction(reaction.emoji, author)
@@ -79,7 +79,7 @@ class Bookings(commands.Cog):
         b.buyer.faction = fields[3].value[fields[3].value.find("``")+2:fields[3].value.rfind("``")]
         b.buyer.rating = fields[4].value[fields[4].value.find("``")+2:fields[4].value.rfind("``")]
         spec_emote = fields[5].value[fields[5].value.find("<"):fields[5].value.find(">")+1]
-        b.buyer.spec, b.buyer.class_ = cfg.spec_from_emote(spec_emote)
+        b.buyer.spec, b.buyer.class_ = data.spec_from_emote(spec_emote)
         price_str = fields[2].value[fields[2].value.find("``") + 2:fields[2].value.rfind("``")].replace(",", "").replace("g", "")
         if price_str.isnumeric():
             b.ad_price_estimate = int(price_str) / cfg.settings["booster_cut"]

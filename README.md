@@ -62,7 +62,7 @@
     The ID for the server the bot will be operating in
   * `post_booking_channel_id` -
     The ID for the channel that bookings will be posted in
-  * `request_booking_channel_id` -
+  * `request_channel` -
     The ID for the channel that will contain the message used to create bookings
   * `request_booking_message_id` -
     The ID for the message that will advertisers will react to to create a booking 

@@ -28,3 +28,7 @@ class RequestFailed(SignupsException):
 
 class BookingUntaken(SignupsException):
     """Booking was not taken and will be moved to the untaken boosts board"""
+
+
+class UnsupportedInstanceType(SignupsException):
+    """Booking instance type is not supported"""

@@ -16,17 +16,13 @@ def load_attrs(obj, path):
             logger.error("Invalid syntax in the shared config file")
             exit()
     else:
-        logger.error("No shared config file detected")
+        logger.error(f"Missing config file at path: {path}")
         exit()
 
 
-class GenCfgManager(object):
-    def __init__(self, devmode_override=False):
-        if devmode and not devmode_override:
-            logger.info("Running GenCfgManager on Developer Mode")
-            self.configpath = "devconfig.json"
-        else:
-            self.configpath = "data/config.json"
+class ConfigManager(object):
+    def __init__(self, configpath):
+        self.configpath = configpath
         load_attrs(self, self.configpath)
 
     def set(self, key, value):
@@ -41,8 +37,8 @@ class GenCfgManager(object):
             logger.error(f"No settings named {key}")
             return False
 
-
-cfg = GenCfgManager()
+    def update(self):
+        json.dump(self.__dict__, open(self.configpath, "w"), indent=4)
 
 
 class GenDataManager(object):
@@ -57,12 +53,12 @@ class GenDataManager(object):
                     return spec, cls
 
 
-class InstanceCfgManager(object):
-    def __init__(self, name, configpath, devmode_override=False):
-        self.name = name
-        if devmode and not devmode_override:
-            logger.info("Running InstanceCfgManager on Developer Mode")
-            self.configpath = "devconfig.json"
-        else:
-            self.configpath = configpath
-        load_attrs(self, self.configpath)
+cfg = ConfigManager("data/config.json")
+data = GenDataManager()
+
+icfg = {}
+if not devmode:
+    for filename in os.listdir('./data/instances'):
+        icfg[filename] = ConfigManager('data/instances'+filename+"config.json")
+else:
+    icfg["developer"] = ConfigManager('data/developer/config.json')

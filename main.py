@@ -30,14 +30,14 @@ class PvpSignups(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.members = True
-        super().__init__(command_prefix=cfg.settings['command_prefix']if not devmode else "?", intents=intents)
+        super().__init__(command_prefix=cfg.command_prefix if not devmode else "?", intents=intents)
         self.startup()
 
     async def on_ready(self):
         try:
             await Booking.load(self)
             await Booking.update_untaken_boosts()
-            if cfg.settings['auto_faction_class_input']:
+            if cfg.auto_faction_class_input:
                 await request.token('wowapi')
             else:
                 logger.info("Automatic faction and class input is disabled")
@@ -49,9 +49,9 @@ class PvpSignups(commands.Bot):
         except exceptions.MessageNotFound as e:
             if str(e) == "request_message":
                 logger.warning("No valid request message was found in the request booking channel, automatically creating...")
-                request_message = await Booking.request_channel.send(f"React with {cfg.settings['twos_emoji']} to create a 2v2 booking or {cfg.settings['threes_emoji']} to create a 3v3 booking")
-                await request_message.add_reaction(cfg.settings['twos_emoji'])
-                await request_message.add_reaction(cfg.settings['threes_emoji'])
+                request_message = await Booking.request_channel.send(f"React with {cfg.twos_emoji} to create a 2v2 booking or {cfg.threes_emoji} to create a 3v3 booking")
+                await request_message.add_reaction(cfg.twos_emoji)
+                await request_message.add_reaction(cfg.threes_emoji)
                 cfg.set("request_booking_message_id", request_message.id)
             if str(e) == "untaken_message":
                 logger.warning("No valid untaken message was found in the untaken booking channel, automatically creating...")
@@ -68,11 +68,6 @@ class PvpSignups(commands.Bot):
 
     def startup(self):
         """Performs the necessary checks on file integrity and loads cogs, must be called or the bot will not have any commands"""
-        if cfg.debug:
-            for file in ['bookings.json', 'token.json']:
-                if not os.path.isfile(f'data/{file}'):
-                    with open(f"data/{file}", "w") as f:
-                        json.dump({}, f)
         self.remove_command("help")
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
@@ -132,7 +127,7 @@ class PvpSignups(commands.Bot):
 def main():
     bot = PvpSignups()
     try:
-        bot.run(cfg.settings['discord_token'])
+        bot.run(cfg.discord_token)
     except discord.LoginFailure:
         logger.error("Bot failed to log in, check discord token is valid in config.json")
 

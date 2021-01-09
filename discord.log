@@ -1,1 +1,7 @@
-2021-01-09 17:15:20,140:INFO:PvpSignups: Running GenCfgManager on Developer Mode
+2021-01-09 20:47:13,041:INFO:PvpSignups: ----- Begin loading instance developer: -----
+2021-01-09 20:47:13,209:INFO:PvpSignups: Successfully located request message
+2021-01-09 20:47:13,209:INFO:PvpSignups: 1 booking(s) have been loaded from the developer cache
+2021-01-09 20:47:13,209:INFO:PvpSignups: ----- Finished loading instance: developer -----
+2021-01-09 20:47:13,209:INFO:PvpSignups: Bot is ready
+2021-01-09 20:47:13,210:INFO:PvpSignups: Beginning booking cleanup...
+2021-01-09 20:47:13,210:INFO:PvpSignups: Finished booking cleanup

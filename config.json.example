@@ -11,7 +11,7 @@
 
     "guild_id": 0,
     "post_booking_channel_id": 0,
-    "request_booking_channel_id": 0,
+    "request_channel": 0,
     "request_booking_message_id": 0,
 
     "twos_emoji": "2\ufe0f\u20e3",

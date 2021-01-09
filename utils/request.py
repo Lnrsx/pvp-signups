@@ -28,7 +28,7 @@ class Request(object):
     """
     def __init__(self):
         self.token_cache = json.load(open("data/token.json", "r"))
-        self.fields = {'wowapi': f"https://{cfg.settings['wowapi_id']}:{cfg.settings['wowapi_secret']}@eu.battle.net/oauth/token"}
+        self.fields = {'wowapi': f"https://{cfg.wowapi_id}:{cfg.wowapi_secret}@eu.battle.net/oauth/token"}
     
     def clearcache(self):
         """Clears the token cache"""
