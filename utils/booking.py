@@ -122,7 +122,7 @@ class Booking(object):
                     logger.info(f"Located untaken boost message ID: {message_id}")
                 except discord.NotFound:
                     cfg.settings["untaken_boosts_message_id_"+bracket].remove(message_id)
-                    cfg.cfgset("untaken_boosts_message_id_"+bracket, cfg.settings["untaken_boosts_message_id_"+bracket])
+                    cfg.set("untaken_boosts_message_id_"+bracket, cfg.settings["untaken_boosts_message_id_"+bracket])
                     logger.info(f"disgarding unlocatable untaken boost message ID: {message_id}")
         with open("data/sylvanas/bookings.json", "r") as f:
             cache = json.load(f)
@@ -161,7 +161,7 @@ class Booking(object):
                 for message in cls.untaken_messages[bracket][len(untaken_bookings_pages):]:
                     try:
                         cfg.settings["untaken_boosts_message_id_"+bracket].remove(message.id)
-                        cfg.cfgupdate("untaken_boosts_message_id_"+bracket)
+                        cfg.update("untaken_boosts_message_id_"+bracket)
                         logger.info(f"Deleting unnecessary untaken message: {message.id}")
                         await message.delete()
                         del message
@@ -208,7 +208,7 @@ class Booking(object):
                     embed = base_embed("")
                     cls.untaken_messages[bracket].append(new_untaken_page)
                     cfg.settings["untaken_boosts_message_id_"+bracket].append(new_untaken_page.id)
-                    cfg.cfgupdate("untaken_boosts_message_id_"+bracket)
+                    cfg.update("untaken_boosts_message_id_"+bracket)
 
     @classmethod
     async def cleanup(cls):

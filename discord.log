@@ -1,9 +1,1 @@
-2021-01-08 00:02:20,734:INFO:PvpSignups: Running on Developer Mode
-2021-01-08 00:02:23,663:INFO:PvpSignups: Successfully located request channel
-2021-01-08 00:02:23,817:INFO:PvpSignups: Located untaken boost message ID: 796756011746590730
-2021-01-08 00:02:23,818:INFO:PvpSignups: 4 booking(s) have been loaded from the cache
-2021-01-08 00:02:24,184:INFO:PvpSignups: Edited untaken message: 796756011746590730
-2021-01-08 00:02:24,184:INFO:PvpSignups: Bot is ready
-2021-01-08 00:02:24,184:INFO:PvpSignups: Beginning booking cleanup...
-2021-01-08 00:02:24,444:INFO:PvpSignups: Edited untaken message: 796756011746590730
-2021-01-08 00:02:24,444:INFO:PvpSignups: Finished booking cleanup
+2021-01-09 17:15:20,140:INFO:PvpSignups: Running GenCfgManager on Developer Mode
