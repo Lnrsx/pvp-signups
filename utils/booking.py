@@ -82,7 +82,7 @@ class Booking(object):
 
     @classmethod
     async def load(cls, client):
-        """Gets the channels responsible for creating / posting bookings and loads the booking cache from data/bookings.json.
+        """Gets the channels responsible for creating / posting bookings and loads the booking cache from data/sylvanas/bookings.json.
         This function must be called on bot startup.
 
         Parameters
@@ -124,7 +124,7 @@ class Booking(object):
                     cfg.settings["untaken_boosts_message_id_"+bracket].remove(message_id)
                     cfg.cfgset("untaken_boosts_message_id_"+bracket, cfg.settings["untaken_boosts_message_id_"+bracket])
                     logger.info(f"disgarding unlocatable untaken boost message ID: {message_id}")
-        with open("data/bookings.json", "r") as f:
+        with open("data/sylvanas/bookings.json", "r") as f:
             cache = json.load(f)
             for _instance in cache.values():
                 instance = jsonpickle.decode(_instance)
@@ -341,7 +341,7 @@ class Booking(object):
                     await self.update_untaken_boosts()
                     raise exceptions.BookingUntaken
             await self.post_message.clear_reactions()
-            weight_file = json.load(open(f'data/userweights.json', 'r'))
+            weight_file = json.load(open(f'data/sylvanas/userweights.json', 'r'))
             user_weights = weight_file[self.bracket]
             for user in [x for x in reactions["users"] if x not in user_weights.keys()]:
                 user_weights[str(user)] = 1
@@ -389,7 +389,7 @@ class Booking(object):
                 else:
                     user_weights[key] = round(user_weights[key] + (self.booster.prim_cut * cfg.settings["bad_luck_protection_mofifier"]), 5)
         weight_file[self.bracket] = user_weights
-        json.dump(weight_file, open(f'data/userweights.json', 'w'), indent=4)
+        json.dump(weight_file, open(f'data/sylvanas/userweights.json', 'w'), indent=4)
         self.status = 2
 
     async def refund(self, full=True):
@@ -425,29 +425,29 @@ class Booking(object):
             raise exceptions.RequestFailed(str(e))
 
     def cache(self):
-        """Saves a booking instance to the cache file at data/bookings.json.
+        """Saves a booking instance to the cache file at data/sylvanas/bookings.json.
 
         .. note::
         All attributes of the booking that are classes are converted to `int` in ID form
          """
-        with open("data/bookings.json", "r") as f:
+        with open("data/sylvanas/bookings.json", "r") as f:
             data = json.load(f)
         temp_author = self._author
         if isinstance(self._author, discord.User):
             self._author = self._author.id
         data[str(self.id)] = jsonpickle.encode(self)
-        json.dump(data, open("data/bookings.json", "w"), indent=4)
+        json.dump(data, open("data/sylvanas/bookings.json", "w"), indent=4)
         self._author = temp_author
 
     def delete(self):
-        """Deletes the booking from the interal instance cache and the external file at data/bookings.json"""
+        """Deletes the booking from the interal instance cache and the external file at data/sylvanas/bookings.json"""
         if self.status not in range(2):
-            data = json.load(open("data/bookings.json", "r"))
+            data = json.load(open("data/sylvanas/bookings.json", "r"))
             if self.id not in data.keys():
                 logger.warning("Tried to delete bookings not in cache")
             else:
                 del data[self.id]
-                with open("data/bookings.json", "w") as f:
+                with open("data/sylvanas/bookings.json", "w") as f:
                     json.dump(data, f, indent=4)
         for i, obj in enumerate(self.instances):
             if obj.id == self.id:

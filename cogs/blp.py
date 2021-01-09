@@ -20,7 +20,7 @@ class Blpcommands(commands.Cog):
             raise Exception("Invalid argument, bracket must be '2v2' or '3v3'")
 
         members = [x for x in ctx.channel.members if x.bot is False]
-        with open('data/userweights.json', 'r') as f:
+        with open('data/sylvanas/userweights.json', 'r') as f:
             user_weights = json.load(f)[bracket]
         users = [x.display_name for x in members]
         weights = [str(round(user_weights[str(x.id)], 2)) if str(x.id) in user_weights.keys() else '1' for x in members]
@@ -40,7 +40,7 @@ class Blpcommands(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def blp(self, ctx, user: Member = None):
 
-        with open("data/userweights.json") as f:
+        with open("data/sylvanas/userweights.json") as f:
             userweights = json.load(f)
         user = user if user else ctx.message.author
         weight_2 = str(round(userweights['2v2'][user.id], 2)) if user.id in userweights['2v2'].keys() else '1'
@@ -56,10 +56,10 @@ class Blpcommands(commands.Cog):
             raise commands.BadArgument
 
         user = user if user else ctx.message.author
-        with open('data/userweights.json', 'r') as f:
+        with open('data/sylvanas/userweights.json', 'r') as f:
             user_weights = json.load(f)
         user_weights[bracket][str(user.id)] = value
-        with open('data/userweights.json', 'w') as f:
+        with open('data/sylvanas/userweights.json', 'w') as f:
             json.dump(user_weights, f, indent=4)
 
         await ctx.send(embed=base_embed(f"{user.mention}'s {bracket} weight has been set to ``{value}``"))

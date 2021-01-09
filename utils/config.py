@@ -8,33 +8,24 @@ devmode = gethostname() == 'DESKTOP-SKJPMQE'
 
 
 class DataManager:
-    def __init__(self):
-        #  Debug mode determines if the bot should validate it's own settings and files before startup.
-        #  Once the bot is fully set up, this can be set to false to improve startup time
-        self.debug = True
-        if devmode:
+    def __init__(self, configpath, devmode_override=False):
+        if devmode and not devmode_override:
             logger.info("Running on Developer Mode")
             self.configpath = "devconfig.json"
         else:
-            self.configpath = "config.json"
-        if self.debug:
-            if os.path.isfile(self.configpath):
-                try:
-                    self.settings = {**json.load(open(self.configpath, "r"))}
-                    self.validate()
-                except json.decoder.JSONDecodeError:
-                    logger.error("Invalid syntax in the config file")
-                    exit()
-            else:
-                if os.path.isfile("config.json.example"):
-                    logger.error("Remove the .example from config.json.example and fill in the relevant fields")
-                else:
-                    logger.error("No config file detected")
+            self.configpath = configpath
+        if os.path.isfile(self.configpath):
+            try:
+                self.settings = {**json.load(open(self.configpath, "r"))}
+                self.validate()
+            except json.decoder.JSONDecodeError:
+                logger.error("Invalid syntax in the config file")
                 exit()
         else:
-            self.settings = {**json.load(open(self.configpath, "r"))}
+            logger.error("No config file detected")
+            exit()
         self.data = {**json.load(open("data/data.json", "r"))}
-        self.pricing = {**json.load(open("data/pricing.json", "r"))}
+        self.pricing = {**json.load(open("data/sylvanas/pricing.json", "r"))}
 
     def cfgset(self, key, value):
         if key in self.settings.keys():
@@ -75,4 +66,4 @@ class DataManager:
             exit()
 
 
-cfg = DataManager()
+cfg = DataManager("data/sylvanas/config.json")

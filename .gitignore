@@ -1,7 +1,5 @@
 venv/*
 .idea/*
 config.json
-data/bookings.json
-data/serviceacct_spreadsheet.json
 data/token.json
 discord.log

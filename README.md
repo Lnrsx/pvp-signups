@@ -9,7 +9,7 @@
     * Each user starts with a weight of 1, each boost they win or lose will +/- their weight at a rate of 0.1 per 1,000,000g
 * **Automatic uploading of bookings to an external google sheet**
     * By default, this includes the discord IDs of the booster(s) and advertise, along with their cuts, the realm(s) the gold was collected on and a screenshot of the gold being sent to the bank character
-* **If a list of bank characters and their realms can also be provided, advertisers will be told which characters to send the gold to after specifying the boosts collected gold realms**
+* **If a list of bank characters, and their realms can also be provided, advertisers will be told which characters to send the gold to after specifying the boosts collected gold realms**
  ## Commands
  
  * **Booking Commands** (Requires booking author)
