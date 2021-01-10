@@ -112,82 +112,86 @@ class Booking(object):
         raise exceptions.RequestFailed(f"No booking was found with ID ``{bookingid}``")
 
     @classmethod
-    async def update_untaken_boosts(cls):
+    async def update_untaken_boosts(cls, instname):
+        if instname not in icfg.keys():
+            logger.error(f"Failed to update untaken boosts for: {instname} - no instance found matching that name")
         page_length = 10
-        for instname, instconfig in icfg.items():
-            embed = base_embed(f"Type ``{cfg.command_prefix}take <ID> <mention teammate if 3v3>`` to claim a boost", title="Untaken boosts")
-            untaken_brackets = {
-                "2v2": [],
-                "3v3": []
-                }
-            for booking in Booking.instances[instname]:
-                if booking.status == 7:
-                    if booking.bracket == "2v2":
-                        untaken_brackets["2v2"].append(booking)
-                    elif booking.bracket == "3v3":
-                        untaken_brackets["3v3"].append(booking)
-            for bracket, untaken_boosts in untaken_brackets.items():
-                untaken_boosts.sort(key=lambda b_sort: (b_sort.buyer.class_, b_sort.buyer.spec))
-                untaken_pages = [untaken_boosts[i:i + page_length] for i in range(0, len(untaken_boosts), page_length)]
-                if len(untaken_pages) < len(cls.untaken_messages[instname][bracket]):
-                    for message in cls.untaken_messages[instname][bracket][len(untaken_pages):]:
-                        try:
-                            instconfig.untaken_messages[bracket].remove(message.id)
-                            instconfig.update()
-                            logger.info(f"Deleting unnecessary untaken message: {message.id}")
-                            await message.delete()
-                            cls.untaken_messages[instname][bracket].remove(message)
-                        except ValueError:
-                            logger.warning("Tried to delete untaken message that didnt exist")
-
-                for i, page in enumerate(untaken_pages):
-                    for n, b in enumerate(page):
-                        edit_required = False
-                        booking_string = f'ID: ``{b.id}``Author: <@{b.authorid}> \n ' \
-                                         f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}`` {b.format_price_estimate()}\n ' \
-                                         f'Buyer info: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm.replace(" ", "%20")}/{b.buyer.name}) ' \
-                                         f'{getattr(cfg, b.buyer.faction.lower() + "_emoji")}' \
-                                         f'{data.spec_emotes[b.buyer.class_][b.buyer.spec]}\n' \
-                                         f'Created: ``{datetime.datetime.utcfromtimestamp(b.timestamp).strftime("%d/%m %H:%M") if b.timestamp else "N/A"}`` \nNotes: ``{b.notes}``'
-                        if untaken_boosts[(i * page_length) + n - 1].buyer.spec != b.buyer.spec:
-                            embed_title = f"\u200b\n{data.spec_emotes[b.buyer.class_][b.buyer.spec]}__**{b.buyer.spec} {b.buyer.class_} bookings**__"
-                        else:
-                            embed_title = "\u200b"
-                        if not (len(cls.untaken_messages[instname][bracket]) > i and len(cls.untaken_messages[instname][bracket][i].embeds[0].fields) > n):
-                            edit_required = True
-                        elif booking_string != cls.untaken_messages[instname][bracket][i].embeds[0].fields[n].value \
-                                or embed_title != cls.untaken_messages[instname][bracket][i].embeds[0].fields[n].name:
-                            edit_required = True
-                        embed.add_field(name=embed_title, value=booking_string, inline=False)
-                    if len(cls.untaken_messages[instname][bracket]) >= i or len(embed.fields) != len(cls.untaken_messages[instname][bracket][i].embeds[0].fields):
-                        edit_required = True
-                    if not embed.fields:
-                        embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
-                        break
-                    if len(cls.untaken_messages[instname][bracket]) > 0 and len(cls.untaken_messages[instname][bracket])-1 >= i:
-                        if edit_required:
-                            try:
-                                await cls.untaken_messages[instname][bracket][i].edit(embed=embed)
-                                logger.info(f"Edited untaken message: {cls.untaken_messages[instname][bracket][i].id}")
-                            except discord.NotFound:
-                                logger.error("Tried to edit a message that was not there")
-                        else:
-                            logger.info(f"Skipping editing untaken message: {cls.untaken_messages[instname][bracket][i].id}")
-                        embed = base_embed("")
-                    else:
-                        new_untaken_page = await cls.untaken_channels[instname][bracket].send(embed=embed)
-                        logger.info(f"Created new untaken message {new_untaken_page.id}")
-                        embed = base_embed("")
-                        cls.untaken_messages[instname][bracket].append(new_untaken_page)
-                        instconfig.untaken_messages[bracket].append(new_untaken_page.id)
+        instconfig = icfg[instname]
+        logger.info(f"----- Begin updating untaken boosts for {instname} -----")
+        embed = base_embed(f"Type ``{cfg.command_prefix}take <ID> <mention teammate if 3v3>`` to claim a boost", title="Untaken boosts")
+        untaken_brackets = {
+            "2v2": [],
+            "3v3": []
+            }
+        for booking in Booking.instances[instname]:
+            if booking.status == 7:
+                if booking.bracket == "2v2":
+                    untaken_brackets["2v2"].append(booking)
+                elif booking.bracket == "3v3":
+                    untaken_brackets["3v3"].append(booking)
+        for bracket, untaken_boosts in untaken_brackets.items():
+            untaken_boosts.sort(key=lambda b_sort: (b_sort.buyer.class_, b_sort.buyer.spec))
+            untaken_pages = [untaken_boosts[i:i + page_length] for i in range(0, len(untaken_boosts), page_length)]
+            if len(untaken_pages) < len(cls.untaken_messages[instname][bracket]):
+                for message in cls.untaken_messages[instname][bracket][len(untaken_pages):]:
+                    try:
+                        instconfig.untaken_messages[bracket].remove(message.id)
                         instconfig.update()
+                        logger.info(f"Deleting unnecessary untaken message: {message.id}")
+                        await message.delete()
+                        cls.untaken_messages[instname][bracket].remove(message)
+                    except ValueError:
+                        logger.warning("Tried to delete untaken message that didnt exist")
+
+            for i, page in enumerate(untaken_pages):
+                for n, b in enumerate(page):
+                    edit_required = False
+                    booking_string = f'ID: ``{b.id}``Author: <@{b.authorid}> \n ' \
+                                     f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}`` {b.format_price_estimate()}\n ' \
+                                     f'Buyer info: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm.replace(" ", "%20")}/{b.buyer.name}) ' \
+                                     f'{getattr(cfg, b.buyer.faction.lower() + "_emoji")}' \
+                                     f'{data.spec_emotes[b.buyer.class_][b.buyer.spec]}\n' \
+                                     f'Created: ``{datetime.datetime.utcfromtimestamp(b.timestamp).strftime("%d/%m %H:%M") if b.timestamp else "N/A"}`` \nNotes: ``{b.notes}``'
+                    if untaken_boosts[(i * page_length) + n - 1].buyer.spec != b.buyer.spec:
+                        embed_title = f"\u200b\n{data.spec_emotes[b.buyer.class_][b.buyer.spec]}__**{b.buyer.spec} {b.buyer.class_} bookings**__"
+                    else:
+                        embed_title = "\u200b"
+                    if not (len(cls.untaken_messages[instname][bracket]) > i and len(cls.untaken_messages[instname][bracket][i].embeds[0].fields) > n):
+                        edit_required = True
+                    elif booking_string != cls.untaken_messages[instname][bracket][i].embeds[0].fields[n].value \
+                            or embed_title != cls.untaken_messages[instname][bracket][i].embeds[0].fields[n].name:
+                        edit_required = True
+                    embed.add_field(name=embed_title, value=booking_string, inline=False)
+                if len(cls.untaken_messages[instname][bracket]) >= i or len(embed.fields) != len(cls.untaken_messages[instname][bracket][i].embeds[0].fields):
+                    edit_required = True
+                if not embed.fields:
+                    embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
+                    break
+                if len(cls.untaken_messages[instname][bracket]) > 0 and len(cls.untaken_messages[instname][bracket])-1 >= i:
+                    if edit_required:
+                        try:
+                            await cls.untaken_messages[instname][bracket][i].edit(embed=embed)
+                            logger.info(f"Edited untaken message: {cls.untaken_messages[instname][bracket][i].id}")
+                        except discord.NotFound:
+                            logger.error("Tried to edit a message that was not there")
+                    else:
+                        logger.info(f"Skipping editing untaken message: {cls.untaken_messages[instname][bracket][i].id}")
+                    embed = base_embed("")
+                else:
+                    new_untaken_page = await cls.untaken_channels[instname][bracket].send(embed=embed)
+                    logger.info(f"Created new untaken message {new_untaken_page.id}")
+                    embed = base_embed("")
+                    cls.untaken_messages[instname][bracket].append(new_untaken_page)
+                    instconfig.untaken_messages[bracket].append(new_untaken_page.id)
+                    instconfig.update()
+        logger.info(f"----- Finished updating untaken boosts for {instname} -----")
 
     @classmethod
     async def cleanup(cls):
         logger.info("Beginning booking cleanup...")
         ts = time.time()
         expired = []
-        for insts in cls.instances.values():
+        for instname, insts in cls.instances.items():
             for i, b in enumerate(insts):
                 if (b.timestamp + 172800) < ts:  # 2 days in seconds
                     if isinstance(b.post_message, int):
@@ -197,8 +201,8 @@ class Booking(object):
                                              f"if the buyer still wants a boost, **DM me** ``!rebook {b.post_message}``"))
                     expired.append(b)
         # no idea why but it needs to be like this or it only cleans first 2 expired
-        [b.delete() for b in expired]
-        await Booking.update_untaken_boosts()
+            [b.delete() for b in expired]
+            await Booking.update_untaken_boosts(instname)
         logger.info("Finished booking cleanup")
 
     @property
@@ -299,7 +303,7 @@ class Booking(object):
                     self.status = 7
                     self.post_message = None
                     self.cache()
-                    await self.update_untaken_boosts()
+                    await self.update_untaken_boosts(self.instance)
                     raise exceptions.BookingUntaken
             await self.post_message.clear_reactions()
             weight_file = json.load(open(f'data/sylvanas/userweights.json', 'r'))

@@ -43,14 +43,14 @@ class Bookings(commands.Cog):
                 message = await Booking.request_channels[instance["name"]].fetch_message(icfg[instance["name"]].request_message)
                 await message.remove_reaction(reaction.emoji, author)
                 try:
-                    logger.info(f"Booking being created by {author.display_name}")
+                    logger.info(f"Booking being created by {author.display_name} for {instance['name']}")
                     await booking.create()
                 except exceptions.BookingUntaken:
                     pass
 
     @commands.command(description="Take an untaken boost, must be in the untaken boosts channel")
     async def take(self, ctx, booking_id, partner: discord.User = None):
-        if ctx.channel.id not in untaken_channels["2v2"].keys() or ctx.channel.id not in untaken_channels["2v2"].keys():
+        if ctx.channel.id not in self.untaken_channels["2v2"].keys() or ctx.channel.id not in self.untaken_channels["2v2"].keys():
             return
 
         await ctx.message.delete()
@@ -71,7 +71,7 @@ class Bookings(commands.Cog):
                                                        f"**Message {booking.author.mention} before you start, as they will most likely have to collect the gold**``"))
         logger.info(f"Booking {booking.id} has been claimed by {booking.booster.prim.display_name}")
         booking.status = 3
-        await Booking.update_untaken_boosts()
+        await Booking.update_untaken_boosts(booking.instance)
 
     @commands.command()
     async def rebook(self, ctx, message_id: int):
@@ -97,6 +97,7 @@ class Bookings(commands.Cog):
         b.buyer.rating = fields[4].value[fields[4].value.find("``")+2:fields[4].value.rfind("``")]
         spec_emote = fields[5].value[fields[5].value.find("<"):fields[5].value.find(">")+1]
         b.buyer.spec, b.buyer.class_ = data.spec_from_emote(spec_emote)
+        b.instance = iname
         price_str = fields[2].value[fields[2].value.find("``") + 2:fields[2].value.rfind("``")].replace(",", "").replace("g", "")
         if price_str.isnumeric():
             b.ad_price_estimate = int(price_str) / icfg[iname].booster_cut
@@ -105,7 +106,7 @@ class Bookings(commands.Cog):
         b.notes = fields[6].value[fields[6].value.find("``") + 2:fields[6].value.rfind("``")]
         b.post_message = message_id
         b.cache()
-        await Booking.update_untaken_boosts()
+        await Booking.update_untaken_boosts(iname)
         await ctx.send(embed=base_embed(f"Booking has been reposted with new ID: ``{b.id}``"))
 
 

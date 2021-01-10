@@ -86,18 +86,19 @@ class AdminTools(commands.Cog):
     @commands.command(description="Deletes a booking")
     async def deletebooking(self, ctx, booking_id):
         booking = Booking.get(booking_id)
+        instname = booking.instance
         if ctx.message.author.id in cfg.settings["managers"] or ctx.message.author.id == booking.author.id:
             booking.delete()
             await ctx.message.author.send(embed=base_embed(f"Booking ``{booking_id}`` has been deleted, if it is on the untaken boosts board, it will be updated in a second"))
             await ctx.message.delete()
-            await Booking.update_untaken_boosts()
+            await Booking.update_untaken_boosts(instname)
         else:
             raise exceptions.RequestFailed("You do not have permission to do that")
 
     @commands.has_permissions(administrator=True)
     @commands.command()
-    async def updateuntaken(self, ctx):
-        await Booking.update_untaken_boosts()
+    async def updateuntaken(self, ctx, instname):
+        await Booking.update_untaken_boosts(instname)
         await ctx.send("👍")
 
 

@@ -1,18 +1,25 @@
-2021-01-10 15:55:29,868:INFO:PvpSignups: ----- Begin loading instance pvp_bookings: -----
-2021-01-10 15:55:30,029:INFO:PvpSignups: Successfully located request message
-2021-01-10 15:55:30,029:INFO:PvpSignups: 2 booking(s) have been loaded from the pvp_bookings cache
-2021-01-10 15:55:30,030:INFO:PvpSignups: ----- Finished loading instance: pvp_bookings -----
-2021-01-10 15:55:30,030:INFO:PvpSignups: ----- Begin loading instance pvp_bookings_2: -----
-2021-01-10 15:55:30,205:INFO:PvpSignups: Successfully located request message
-2021-01-10 15:55:30,205:INFO:PvpSignups: 2 booking(s) have been loaded from the pvp_bookings_2 cache
-2021-01-10 15:55:30,205:INFO:PvpSignups: ----- Finished loading instance: pvp_bookings_2 -----
-2021-01-10 15:55:30,206:INFO:PvpSignups: Bot is ready
-2021-01-10 15:55:30,206:INFO:PvpSignups: Beginning booking cleanup...
-2021-01-10 15:55:30,206:INFO:PvpSignups: Finished booking cleanup
-2021-01-10 15:55:31,935:INFO:PvpSignups: Booking being created by Lunarus
-2021-01-10 15:55:42,610:INFO:PvpSignups: Posting 2v2 booking: 9097477282
-2021-01-10 15:55:49,918:INFO:PvpSignups: Created new untaken message 797856234682187786
-2021-01-10 15:56:24,300:INFO:PvpSignups: Booking being created by Lunarus
-2021-01-10 15:56:35,187:INFO:PvpSignups: Posting 2v2 booking: 1324405174
-2021-01-10 15:56:42,410:INFO:PvpSignups: Created new untaken message 797856454824296488
-2021-01-10 15:56:42,572:INFO:PvpSignups: Edited untaken message: 797856234682187786
+2021-01-10 16:23:24,059:INFO:PvpSignups: ----- Begin loading instance pvp_bookings: -----
+2021-01-10 16:23:24,316:INFO:PvpSignups: Successfully located request message
+2021-01-10 16:23:24,575:INFO:PvpSignups: Located untaken boost message ID: 797856454824296488
+2021-01-10 16:23:24,575:INFO:PvpSignups: 2 booking(s) have been loaded from the pvp_bookings cache
+2021-01-10 16:23:24,576:INFO:PvpSignups: ----- Finished loading instance: pvp_bookings -----
+2021-01-10 16:23:24,576:INFO:PvpSignups: ----- Begin loading instance pvp_bookings_2: -----
+2021-01-10 16:23:24,713:INFO:PvpSignups: Successfully located request message
+2021-01-10 16:23:25,029:INFO:PvpSignups: Located untaken boost message ID: 797856234682187786
+2021-01-10 16:23:25,030:INFO:PvpSignups: 2 booking(s) have been loaded from the pvp_bookings_2 cache
+2021-01-10 16:23:25,030:INFO:PvpSignups: ----- Finished loading instance: pvp_bookings_2 -----
+2021-01-10 16:23:25,030:INFO:PvpSignups: ----- Begin updating untaken boosts for pvp_bookings -----
+2021-01-10 16:23:25,196:INFO:PvpSignups: Edited untaken message: 797856454824296488
+2021-01-10 16:23:25,196:INFO:PvpSignups: ----- Finished updating untaken boosts for pvp_bookings -----
+2021-01-10 16:23:25,196:INFO:PvpSignups: ----- Begin updating untaken boosts for pvp_bookings_2 -----
+2021-01-10 16:23:25,346:INFO:PvpSignups: Edited untaken message: 797856234682187786
+2021-01-10 16:23:25,346:INFO:PvpSignups: ----- Finished updating untaken boosts for pvp_bookings_2 -----
+2021-01-10 16:23:25,346:INFO:PvpSignups: Bot is ready
+2021-01-10 16:23:25,347:INFO:PvpSignups: Beginning booking cleanup...
+2021-01-10 16:23:25,347:INFO:PvpSignups: ----- Begin updating untaken boosts for pvp_bookings -----
+2021-01-10 16:23:25,556:INFO:PvpSignups: Edited untaken message: 797856454824296488
+2021-01-10 16:23:25,556:INFO:PvpSignups: ----- Finished updating untaken boosts for pvp_bookings -----
+2021-01-10 16:23:25,556:INFO:PvpSignups: ----- Begin updating untaken boosts for pvp_bookings_2 -----
+2021-01-10 16:23:25,732:INFO:PvpSignups: Edited untaken message: 797856234682187786
+2021-01-10 16:23:25,732:INFO:PvpSignups: ----- Finished updating untaken boosts for pvp_bookings_2 -----
+2021-01-10 16:23:25,732:INFO:PvpSignups: Finished booking cleanup

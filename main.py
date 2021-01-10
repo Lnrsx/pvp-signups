@@ -35,7 +35,8 @@ class PvpSignups(commands.Bot):
     async def on_ready(self):
         try:
             await Booking.load(self)
-            await Booking.update_untaken_boosts()
+            for instname in icfg.keys():
+                await Booking.update_untaken_boosts(instname)
             if cfg.auto_faction_class_input:
                 await request.token('wowapi')
             else:
