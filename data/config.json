@@ -1,4 +1,6 @@
 {
+    "directory": "data",
+    "subdir": "/config.json",
     "command_prefix": "!",
     "post_wait_time": 5,
     "teammate_pick_timeout": 300,

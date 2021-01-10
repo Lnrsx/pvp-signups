@@ -5,7 +5,7 @@ from utils.misc import get_logger, base_embed
 from utils.request import request
 from utils.booking import Booking
 from utils import exceptions
-from utils.config import cfg, devmode
+from utils.config import cfg, icfg, devmode
 
 from discord.ext import commands, tasks
 import discord
@@ -44,24 +44,6 @@ class PvpSignups(commands.Bot):
         except exceptions.ChannelNotFound:
             logger.error("Bot failed to find the post, request or untaken channels from ID, check them in config.json")
             exit()
-
-        except exceptions.MessageNotFound as e:
-            inst, channel_type, bracket = e
-            if channel_type == "request":
-                logger.warning("No valid request message was found in the request booking channel, automatically creating...")
-                request_message = await Booking.request_channels[inst].send(f"React with {cfg.twos_emoji} to create a 2v2 booking or {cfg.threes_emoji} to create a 3v3 booking")
-                await request_message.add_reaction(cfg.twos_emoji)
-                await request_message.add_reaction(cfg.threes_emoji)
-                cfg.set("request_booking_message_id", request_message.id)
-                cfg.update()
-                await Booking.load(self)
-            elif channel_type == "untaken":
-                logger.warning("No valid untaken message was found in the untaken booking channel, automatically creating...")
-                untaken_message = await Booking.untaken_channels[inst][bracket].send(embed=base_embed("Loading bookings...", title="Untaken boosts"))
-                cfg.set("untaken_boosts_message_id_2v2", untaken_message.id)
-                cfg.update()
-                await Booking.load(self)
-                await Booking.update_untaken_boosts()
 
         except exceptions.InvalidTokenResponse:
             cfg.set("auto_faction_class_input", False)

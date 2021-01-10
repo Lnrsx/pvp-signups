@@ -1,0 +1,30 @@
+{
+    "directory": "data/instances/pvp_bookings_2",
+    "subdir": "/config.json",
+    "guild_id": 797848373889073212,
+    "post_2v2": 797848489945202729,
+    "post_3v3": 797848535839014972,
+    "post_glad": 797848562040832040,
+    "request_channel": 797848373889073215,
+    "request_message": 797854972456730645,
+    "untaken_channels": {
+        "2v2": 797848585646768150,
+        "3v3": 797848607662276618
+    },
+    "untaken_messages": {
+        "2v2": [
+            797856234682187786
+        ],
+        "3v3": []
+    },
+    "horde_role": "<@&797849495814537287>",
+    "alliance_role": "<@&797849554460475392>",
+    "booster_cut": 0.77,
+    "advertiser_cut": 0.11,
+    "management_cut": 0.12,
+    "managers": [
+        282135704392302593,
+        170793631102402560,
+        745647780864851968
+    ]
+}

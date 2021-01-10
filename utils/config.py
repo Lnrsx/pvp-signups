@@ -4,7 +4,7 @@ import os
 from socket import gethostname
 
 logger = get_logger("PvpSignups")
-devmode = gethostname() == 'DESKTOP-SKJPMQE'
+devmode = False  # gethostname() == 'DESKTOP-SKJPMQE'
 
 
 def load_attrs(obj, path):
@@ -31,7 +31,7 @@ class ConfigManager(object):
             setattr(self, key, value)
             file = json.load(open(self.directory+self.subdir, "r"))
             file[key] = value
-            json.dump(open(self.directory+self.subdir, "w"), file, indent=4)
+            json.dump(file, open(self.directory+self.subdir, "w"), indent=4)
             return True
 
         else:
@@ -60,8 +60,8 @@ data = GenDataManager()
 icfg, ipricing = {}, {}
 if not devmode:
     for filename in os.listdir('./data/instances'):
-        icfg[filename] = ConfigManager('data/instances'+filename, "/config.json")
-        ipricing[filename] = ConfigManager('data/instances'+filename, "/pricing.json")
+        icfg[filename] = ConfigManager('data/instances/'+filename, "/config.json")
+        ipricing[filename] = ConfigManager('data/instances/'+filename, "/pricing.json")
 else:
-    icfg["developer"] = ConfigManager('data/developer', "/config.json")
-    ipricing["developer"] = ConfigManager('data/developer', "/pricing.json")
+    icfg["pvp_bookings"] = ConfigManager('data/pvp_bookings', "/config.json")
+    ipricing["pvp_bookings"] = ConfigManager('data/pvp_bookings', "/pricing.json")

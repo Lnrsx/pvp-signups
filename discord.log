@@ -1,12 +1,18 @@
-2021-01-10 00:53:26,332:INFO:PvpSignups: ----- Begin loading instance developer: -----
-2021-01-10 00:53:26,467:INFO:PvpSignups: Successfully located request message
-2021-01-10 00:53:26,468:INFO:PvpSignups: 1 booking(s) have been loaded from the developer cache
-2021-01-10 00:53:26,468:INFO:PvpSignups: ----- Finished loading instance: developer -----
-2021-01-10 00:53:26,665:INFO:PvpSignups: Created new untaken message 797629140194295808
-2021-01-10 00:53:26,666:INFO:PvpSignups: Bot is ready
-2021-01-10 00:53:26,666:INFO:PvpSignups: Beginning booking cleanup...
-2021-01-10 00:53:26,847:INFO:PvpSignups: Edited untaken message: 797629140194295808
-2021-01-10 00:53:26,847:INFO:PvpSignups: Finished booking cleanup
-2021-01-10 00:53:40,842:INFO:PvpSignups: Booking being created by Lunarus
-2021-01-10 00:53:50,254:INFO:PvpSignups: Posting 2v2 booking: 9542150161
-2021-01-10 00:53:57,534:INFO:PvpSignups: Edited untaken message: 797629140194295808
+2021-01-10 15:55:29,868:INFO:PvpSignups: ----- Begin loading instance pvp_bookings: -----
+2021-01-10 15:55:30,029:INFO:PvpSignups: Successfully located request message
+2021-01-10 15:55:30,029:INFO:PvpSignups: 2 booking(s) have been loaded from the pvp_bookings cache
+2021-01-10 15:55:30,030:INFO:PvpSignups: ----- Finished loading instance: pvp_bookings -----
+2021-01-10 15:55:30,030:INFO:PvpSignups: ----- Begin loading instance pvp_bookings_2: -----
+2021-01-10 15:55:30,205:INFO:PvpSignups: Successfully located request message
+2021-01-10 15:55:30,205:INFO:PvpSignups: 2 booking(s) have been loaded from the pvp_bookings_2 cache
+2021-01-10 15:55:30,205:INFO:PvpSignups: ----- Finished loading instance: pvp_bookings_2 -----
+2021-01-10 15:55:30,206:INFO:PvpSignups: Bot is ready
+2021-01-10 15:55:30,206:INFO:PvpSignups: Beginning booking cleanup...
+2021-01-10 15:55:30,206:INFO:PvpSignups: Finished booking cleanup
+2021-01-10 15:55:31,935:INFO:PvpSignups: Booking being created by Lunarus
+2021-01-10 15:55:42,610:INFO:PvpSignups: Posting 2v2 booking: 9097477282
+2021-01-10 15:55:49,918:INFO:PvpSignups: Created new untaken message 797856234682187786
+2021-01-10 15:56:24,300:INFO:PvpSignups: Booking being created by Lunarus
+2021-01-10 15:56:35,187:INFO:PvpSignups: Posting 2v2 booking: 1324405174
+2021-01-10 15:56:42,410:INFO:PvpSignups: Created new untaken message 797856454824296488
+2021-01-10 15:56:42,572:INFO:PvpSignups: Edited untaken message: 797856234682187786

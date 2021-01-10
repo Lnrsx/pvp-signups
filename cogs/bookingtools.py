@@ -8,19 +8,6 @@ import discord
 
 logger = get_logger("PvpSignups")
 
-request_channels, request_messages = {}, {}
-untaken_channels = {
-    "2v2": {},
-    "3v3": {}
-}
-for instname, instconfig in icfg.items():
-    request_channels[instconfig.request_channel] = {
-        "message_id": instconfig.request_message,
-        "name": instname
-    }
-    untaken_channels["2v2"][instconfig.untaken_channels["2v2"]] = instname
-    untaken_channels["3v3"][instconfig.untaken_channels["3v3"]] = instname
-
 
 class Bookings(commands.Cog):
 
@@ -28,11 +15,24 @@ class Bookings(commands.Cog):
 
     def __init__(self, client):
         self.client = client
+        self.request_channels = {}
+        self.request_messages = {}
+        self.untaken_channels = {
+            "2v2": {},
+            "3v3": {}
+        }
+        for instname, instconfig in icfg.items():
+            self.request_channels[instconfig.request_channel] = {
+                "message_id": instconfig.request_message,
+                "name": instname
+            }
+            self.untaken_channels["2v2"][instconfig.untaken_channels["2v2"]] = instname
+            self.untaken_channels["3v3"][instconfig.untaken_channels["3v3"]] = instname
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, reaction):
-        if reaction.channel_id in request_channels.keys():
-            instance = request_channels[reaction.channel_id]
+        if reaction.channel_id in self.request_channels.keys():
+            instance = self.request_channels[reaction.channel_id]
             cond1 = reaction.message_id == instance["message_id"]
             cond2 = reaction.emoji.name in cfg.twos_emoji, cfg.threes_emoji
             cond3 = reaction.user_id != self.client.user.id

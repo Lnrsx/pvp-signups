@@ -57,7 +57,7 @@ class Booking(object):
 
             cls.request_channels[instname] = commands.Bot.get_channel(cls.client, instconfig.request_channel)
             if cls.request_channels[instname] is None:
-                raise exceptions.ChannelNotFound(instname, "request", False)
+                raise exceptions.ChannelNotFound
 
             cls.post_channels[instname] = {
                 "2v2": commands.Bot.get_channel(cls.client, instconfig.post_2v2),
@@ -66,7 +66,7 @@ class Booking(object):
             }
             for bracket, channel in cls.post_channels[instname].items():
                 if channel is None:
-                    raise exceptions.ChannelNotFound(instname, "post", bracket)
+                    raise exceptions.ChannelNotFound
 
             cls.untaken_channels[instname] = {
                 "2v2": commands.Bot.get_channel(cls.client, instconfig.untaken_channels["2v2"]),
@@ -74,13 +74,18 @@ class Booking(object):
             }
             for bracket, channel in cls.untaken_channels[instname].items():
                 if channel is None:
-                    raise exceptions.ChannelNotFound(instname, "untaken", bracket)
+                    raise exceptions.ChannelNotFound
 
             try:
                 await cls.request_channels[instname].fetch_message(instconfig.request_message)
                 logger.info("Successfully located request message")
             except discord.NotFound:
-                raise exceptions.MessageNotFound("request_message")
+                logger.warning("No valid request message was found in the request booking channel, automatically creating...")
+                request_message = await cls.request_channels[instname].send(f"React with {cfg.twos_emoji} to create a 2v2 booking or {cfg.threes_emoji} to create a 3v3 booking")
+                await request_message.add_reaction(cfg.twos_emoji)
+                await request_message.add_reaction(cfg.threes_emoji)
+                instconfig.set("request_message", request_message.id)
+                instconfig.update()
             cls.untaken_messages[instname] = {}
             for bracket, messages in instconfig.untaken_messages.items():
                 cls.untaken_messages[instname][bracket] = []
@@ -92,7 +97,7 @@ class Booking(object):
                         instconfig.untaken_messages[bracket].remove(message_id)
                         instconfig.update()
                         logger.info(f"disgarding unlocatable untaken boost message ID: {message_id}")
-            cache = json.load(open(f"data/{instname}/bookings.json", "r"))
+            cache = json.load(open(f"{instconfig.directory}/bookings.json", "r"))
             for _instance in cache.values():
                 instance = jsonpickle.decode(_instance)
                 instance.__class__.instances[instname].append(instance)
@@ -125,10 +130,10 @@ class Booking(object):
                 untaken_boosts.sort(key=lambda b_sort: (b_sort.buyer.class_, b_sort.buyer.spec))
                 untaken_pages = [untaken_boosts[i:i + page_length] for i in range(0, len(untaken_boosts), page_length)]
                 if len(untaken_pages) < len(cls.untaken_messages[instname][bracket]):
-                    for message in cls.untaken_messages[instname][bracket][len(untaken_bookings_pages):]:
+                    for message in cls.untaken_messages[instname][bracket][len(untaken_pages):]:
                         try:
-                            icfg.untaken_messages[bracket].remove(message.id)
-                            cfg.update()
+                            instconfig.untaken_messages[bracket].remove(message.id)
+                            instconfig.update()
                             logger.info(f"Deleting unnecessary untaken message: {message.id}")
                             await message.delete()
                             cls.untaken_messages[instname][bracket].remove(message)
@@ -174,8 +179,8 @@ class Booking(object):
                         logger.info(f"Created new untaken message {new_untaken_page.id}")
                         embed = base_embed("")
                         cls.untaken_messages[instname][bracket].append(new_untaken_page)
-                        icfg[instname].untaken_messages[bracket].append(new_untaken_page.id)
-                        icfg[instname].update()
+                        instconfig.untaken_messages[bracket].append(new_untaken_page.id)
+                        instconfig.update()
 
     @classmethod
     async def cleanup(cls):
