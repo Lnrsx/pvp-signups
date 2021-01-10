@@ -13,7 +13,6 @@ import discord
 import os
 import sys
 import traceback
-import json
 from inspect import Parameter
 
 logger = get_logger('PvpSignups')
@@ -47,16 +46,20 @@ class PvpSignups(commands.Bot):
             exit()
 
         except exceptions.MessageNotFound as e:
-            if str(e) == "request_message":
+            inst, channel_type, bracket = e
+            if channel_type == "request":
                 logger.warning("No valid request message was found in the request booking channel, automatically creating...")
-                request_message = await Booking.request_channel.send(f"React with {cfg.twos_emoji} to create a 2v2 booking or {cfg.threes_emoji} to create a 3v3 booking")
+                request_message = await Booking.request_channels[inst].send(f"React with {cfg.twos_emoji} to create a 2v2 booking or {cfg.threes_emoji} to create a 3v3 booking")
                 await request_message.add_reaction(cfg.twos_emoji)
                 await request_message.add_reaction(cfg.threes_emoji)
                 cfg.set("request_booking_message_id", request_message.id)
-            if str(e) == "untaken_message":
+                cfg.update()
+                await Booking.load(self)
+            elif channel_type == "untaken":
                 logger.warning("No valid untaken message was found in the untaken booking channel, automatically creating...")
-                untaken_message = await Booking.untaken_channel.send(embed=base_embed("Loading bookings...", title="Untaken boosts"))
+                untaken_message = await Booking.untaken_channels[inst][bracket].send(embed=base_embed("Loading bookings...", title="Untaken boosts"))
                 cfg.set("untaken_boosts_message_id_2v2", untaken_message.id)
+                cfg.update()
                 await Booking.load(self)
                 await Booking.update_untaken_boosts()
 

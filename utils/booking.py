@@ -2,7 +2,7 @@ from utils import pricing
 from utils.misc import base_embed, get_logger
 from utils.request import request
 from utils import exceptions
-from utils.config import cfg, icfg
+from utils.config import cfg, icfg, data
 
 from discord.ext import commands
 import discord
@@ -15,6 +15,7 @@ import jsonpickle
 import random
 import time
 import datetime
+import itertools
 
 logger = get_logger("PvpSignups")
 statuses = ['Compiling', 'Posted', 'Pending (not uploaded)', 'Pending', 'Refund', 'Partial refund', 'Complete', 'Untaken']
@@ -57,16 +58,16 @@ class Booking(object):
     """
     instances = {instname: [] for instname in icfg.keys()}
     client = None
-    _untaken_messages = {}
-    _post_channels = {}
-    _request_channel = {}
-    _untaken_channels = {}
+    untaken_messages = {}
+    post_channels = {}
+    request_channels = {}
+    untaken_channels = {}
 
     def __init__(self, bracket, author: discord.User, instname):
         if instname not in icfg.keys():
             raise exceptions.UnsupportedInstanceType
         self.__class__.instances[instname].append(self)
-        self.instance = instance
+        self.instance = instname
         self._author = author
         self.bracket = bracket
         self.status = 0
@@ -87,32 +88,38 @@ class Booking(object):
         for instname, instconfig in icfg.items():
             logger.info(f"----- Begin loading instance {instname}: -----")
 
-            cls._request_channel[instname] = commands.Bot.get_channel(cls.client, instconfig.request_channel)
+            cls.request_channels[instname] = commands.Bot.get_channel(cls.client, instconfig.request_channel)
+            if cls.request_channels[instname] is None:
+                raise exceptions.ChannelNotFound(instname, "request", False)
 
-            cls._post_channels[instname] = {
+            cls.post_channels[instname] = {
                 "2v2": commands.Bot.get_channel(cls.client, instconfig.post_2v2),
                 "3v3": commands.Bot.get_channel(cls.client, instconfig.post_3v3),
                 "glad": commands.Bot.get_channel(cls.client, instconfig.post_glad)
             }
-            cls._untaken_channels[instname] = {
-                "2v2": commands.Bot.get_channel(cls.client, instconfig.untaken_channel_2v2),
-                "3v3": commands.Bot.get_channel(cls.client, instconfig.untaken_channel_3v3)
-            }
+            for bracket, channel in cls.post_channels[instname].items():
+                if channel is None:
+                    raise exceptions.ChannelNotFound(instname, "post", bracket)
 
-            if None in (cls._post_channels[instname].values(), cls._untaken_channels[instname].values()):
-                raise exceptions.ChannelNotFound
+            cls.untaken_channels[instname] = {
+                "2v2": commands.Bot.get_channel(cls.client, instconfig.untaken_channels["2v2"]),
+                "3v3": commands.Bot.get_channel(cls.client, instconfig.untaken_channels["3v3"])
+            }
+            for bracket, channel in cls.untaken_channels[instname].items():
+                if channel is None:
+                    raise exceptions.ChannelNotFound(instname, "untaken", bracket)
 
             try:
-                await cls._request_channel[instname].fetch_message(instconfig.request_message)
+                await cls.request_channels[instname].fetch_message(instconfig.request_message)
                 logger.info("Successfully located request message")
             except discord.NotFound:
                 raise exceptions.MessageNotFound("request_message")
-            cls._untaken_messages[instname] = {}
+            cls.untaken_messages[instname] = {}
             for bracket, messages in instconfig.untaken_messages.items():
-                cls._untaken_messages[instname][bracket] = []
+                cls.untaken_messages[instname][bracket] = []
                 for message_id in messages:
                     try:
-                        cls._untaken_messages[instname][bracket].append(await cls._untaken_channels[instname][bracket].fetch_message(message_id))
+                        cls.untaken_messages[instname][bracket].append(await cls.untaken_channels[instname][bracket].fetch_message(message_id))
                         logger.info(f"Located untaken boost message ID: {message_id}")
                     except discord.NotFound:
                         instconfig.untaken_messages[bracket].remove(message_id)
@@ -127,7 +134,7 @@ class Booking(object):
 
     @classmethod
     def get(cls, bookingid):
-        for instance in cls.instances:
+        for instance in cls.joined_instances:
             if instance.id == bookingid:
                 return instance
         raise exceptions.RequestFailed(f"No booking was found with ID ``{bookingid}``")
@@ -150,14 +157,14 @@ class Booking(object):
             for bracket, untaken_boosts in untaken_brackets.items():
                 untaken_boosts.sort(key=lambda b_sort: (b_sort.buyer.class_, b_sort.buyer.spec))
                 untaken_pages = [untaken_boosts[i:i + page_length] for i in range(0, len(untaken_boosts), page_length)]
-                if len(untaken_pages) < len(cls._untaken_messages[instname][bracket]):
-                    for message in cls._untaken_messages[instname][bracket][len(untaken_bookings_pages):]:
+                if len(untaken_pages) < len(cls.untaken_messages[instname][bracket]):
+                    for message in cls.untaken_messages[instname][bracket][len(untaken_bookings_pages):]:
                         try:
                             icfg.untaken_messages[bracket].remove(message.id)
                             cfg.update()
                             logger.info(f"Deleting unnecessary untaken message: {message.id}")
                             await message.delete()
-                            cls._untaken_messages[instname][bracket].remove(message)
+                            cls.untaken_messages[instname][bracket].remove(message)
                         except ValueError:
                             logger.warning("Tried to delete untaken message that didnt exist")
 
@@ -168,10 +175,10 @@ class Booking(object):
                                          f'Boost info: ``{b.bracket} {b.type} {b.buyer.rating}`` {b.format_price_estimate()}\n ' \
                                          f'Buyer info: [{b.buyer.name}-{b.buyer.realm}](https://check-pvp.fr/eu/{b.buyer.realm.replace(" ", "%20")}/{b.buyer.name}) ' \
                                          f'{getattr(cfg, b.buyer.faction.lower() + "_emoji")}' \
-                                         f'{cfg.data["spec_emotes"][b.buyer.class_][b.buyer.spec]}\n' \
+                                         f'{data.spec_emotes[b.buyer.class_][b.buyer.spec]}\n' \
                                          f'Created: ``{datetime.datetime.utcfromtimestamp(b.timestamp).strftime("%d/%m %H:%M") if b.timestamp else "N/A"}`` \nNotes: ``{b.notes}``'
                         if untaken_boosts[(i * page_length) + n - 1].buyer.spec != b.buyer.spec:
-                            embed_title = f"\u200b\n{cfg.data['spec_emotes'][b.buyer.class_][b.buyer.spec]}__**{b.buyer.spec} {b.buyer.class_} bookings**__"
+                            embed_title = f"\u200b\n{data.spec_emotes[b.buyer.class_][b.buyer.spec]}__**{b.buyer.spec} {b.buyer.class_} bookings**__"
                         else:
                             embed_title = "\u200b"
                         if not (len(cls.untaken_messages[bracket]) > i and len(cls.untaken_messages[bracket][i].embeds[0].fields) > n):
@@ -242,12 +249,16 @@ class Booking(object):
     @property
     def post_channel(self):
         if self.bracket == "2v2":
-            return self.post_channel_2v2
+            return self.post_channels[self.instance]["2v2"]
         elif self.bracket == "3v3":
             if self.type == "Gladiator":
-                return self.post_channel_glad
+                return self.post_channels[self.instance]["glad"]
             else:
-                return self.post_channel_3v3
+                return self.post_channels[self.instance]["3v3"]
+
+    @property
+    def joined_instances(self):
+        return list(itertools.chain.from_iterable(self.instances.values()))
 
     async def create(self):
         try:
@@ -279,7 +290,7 @@ class Booking(object):
         embed.add_field(name='Est. booster cut', value=self.format_price_estimate())
         embed.add_field(name='Buyer faction', value=f"{getattr(cfg, self.buyer.faction.lower() + '_emoji')}``{self.buyer.faction}``")
         embed.add_field(name='Boost rating', value=f"``{self.buyer.rating}``")
-        embed.add_field(name='Buyer Spec', value=f'{cfg.data["spec_emotes"][self.buyer.class_][self.buyer.spec]}``{self.buyer.spec} {self.buyer.class_}``')
+        embed.add_field(name='Buyer Spec', value=f'{data.spec_emotes[self.buyer.class_][self.buyer.spec]}``{self.buyer.spec} {self.buyer.class_}``')
         embed.add_field(name='Notes', value=f"``{self.notes}``")
         embed.set_footer(text=f"Winner will be picked in {cfg.post_wait_time} seconds")
         if self.buyer.faction == "Horde":
@@ -372,24 +383,24 @@ class Booking(object):
 
     def cache(self):
         with open("data/sylvanas/bookings.json", "r") as f:
-            data = json.load(f)
+            jsondata = json.load(f)
         temp_author = self._author
         if isinstance(self._author, discord.User):
             self._author = self._author.id
         data[str(self.id)] = jsonpickle.encode(self)
-        json.dump(data, open("data/sylvanas/bookings.json", "w"), indent=4)
+        json.dump(jsondata, open("data/sylvanas/bookings.json", "w"), indent=4)
         self._author = temp_author
 
     def delete(self):
         """Deletes the booking from the interal instance cache and the external file at data/sylvanas/bookings.json"""
         if self.status not in range(2):
-            data = json.load(open("data/sylvanas/bookings.json", "r"))
-            if self.id not in data.keys():
+            jsondata = json.load(open("data/sylvanas/bookings.json", "r"))
+            if self.id not in jsondata.keys():
                 logger.warning("Tried to delete bookings not in cache")
             else:
-                del data[self.id]
+                del jsondata[self.id]
                 with open("data/sylvanas/bookings.json", "w") as f:
-                    json.dump(data, f, indent=4)
+                    json.dump(jsondata, f, indent=4)
         for i, obj in enumerate(self.instances):
             if obj.id == self.id:
                 del self.instances[i]
@@ -398,13 +409,13 @@ class Booking(object):
     async def _get_boost_type(self, force=False):
         if not force and self.type:
             return
-        fields = '\n'.join(cfg.data['boost_types'] + cfg.data['bracket_boost_types'][self.bracket])
+        fields = '\n'.join(data.boost_types + data.bracket_boost_types[self.bracket])
         boost_type = await request.react_message(
             self, f"the **boost type**, accepted respones:\n"
             f" {fields}\nor react with ❌ to cancel the booking", '❌')
-        if boost_type in cfg.data['boost_types']:
+        if boost_type in data.boost_types:
             self.type = boost_type
-        elif boost_type in cfg.data['bracket_boost_types'][self.bracket]:
+        elif boost_type in data.bracket_boost_types[self.bracket]:
             self.type = boost_type
         else:
             await self.author.send('Boost type not recognised, please try again.')
@@ -468,15 +479,15 @@ class Booking(object):
     async def manual_class_input(self, force=False):
         if not force and self.buyer.class_:
             return
-        fields = '\n'.join(cfg.data['class_emotes'])
+        fields = '\n'.join(data.class_emotes)
         buyer_class = await request.react_message(
             self, f'the **buyers class**, accepted responses:\n {fields}\n'
             'or react with ❌ to cancel the booking', '❌')
-        if buyer_class in cfg.data['specs_abbreviations'].keys():
+        if buyer_class in data.specs_abbreviations.keys():
             self.buyer.class_ = buyer_class
         else:
-            if buyer_class in cfg.data['class_abbreviations'].keys():
-                self.buyer.class_ = cfg.data['class_abbreviations'][buyer_class]
+            if buyer_class in data.class_abbreviations.keys():
+                self.buyer.class_ = data.class_abbreviations[buyer_class]
             else:
                 await self.author.send('Class not recognised, please try again.')
                 await self.manual_class_input()
@@ -487,20 +498,20 @@ class Booking(object):
         if not self.buyer.class_:
             raise exceptions.RequestFailed("Cannot get spec when class is not known")
         accepted_inputs_string = ''
-        for i in cfg.data['spec_emotes'][self.buyer.class_].keys():
-            accepted_inputs_string += cfg.data['spec_emotes'][self.buyer.class_][i] + i + '\n'
+        for i in data.spec_emotes[self.buyer.class_].keys():
+            accepted_inputs_string += data.spec_emotes[self.buyer.class_][i] + i + '\n'
         buyer_spec = await request.react_message(
             self, f'the **buyers spec**,'
             f' accepted respones:\n {accepted_inputs_string}', '❌')
 
-        if buyer_spec not in cfg.data['spec_emotes'][self.buyer.class_].keys() and buyer_spec not in list(cfg.data['specs_abbreviations'][self.buyer.class_].keys()):
+        if buyer_spec not in data.spec_emotes[self.buyer.class_].keys() and buyer_spec not in list(data.specs_abbreviations[self.buyer.class_].keys()):
             await self.author.send('Spec not recognised, please try again.')
             await self._get_spec()
 
         else:
             # translates spec abbreivation to proper class name if it is used
-            if buyer_spec in list(cfg.data['specs_abbreviations'][self.buyer.class_].keys()):
-                buyer_spec = cfg.data['specs_abbreviations'][self.buyer.class_][buyer_spec]
+            if buyer_spec in list(data.specs_abbreviations[self.buyer.class_].keys()):
+                buyer_spec = data.specs_abbreviations[self.buyer.class_][buyer_spec]
 
             self.buyer.spec = buyer_spec
 
@@ -524,12 +535,12 @@ class Booking(object):
                 and len(boost_rating.split('-')) == 2 and int(boost_rating.split("-")[0]) < int(boost_rating.split("-")[1]):
             start_rating, end_rating = int(boost_rating.split("-")[0]), int(boost_rating.split("-")[1])
             self.buyer.rating = boost_rating
-            self.price_recommendation = pricing.set_rating(self.bracket, start_rating, end_rating)
+            self.price_recommendation = pricing.set_rating(self.instance, self.bracket, start_rating, end_rating)
 
         elif self.type != "Set rating" and boost_rating.isnumeric() and int(boost_rating) in range(0, 3501):
             if self.type == '1 win':
                 self.buyer.rating = boost_rating
-                self.price_recommendation = pricing.one_win(self.bracket, int(boost_rating))
+                self.price_recommendation = pricing.one_win(self.instance, self.bracket, int(boost_rating))
 
             elif self.type == 'Gladiator':
                 self.buyer.rating = boost_rating
@@ -537,7 +548,7 @@ class Booking(object):
 
             else:
                 self.buyer.rating = boost_rating
-                self.price_recommendation = pricing.hourly(self.bracket)
+                self.price_recommendation = pricing.hourly(self.instance, self.bracket)
 
         else:
             await self.author.send("Rating format not recognised, please check your format and try again")

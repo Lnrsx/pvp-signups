@@ -56,9 +56,11 @@ class GenDataManager(object):
 cfg = ConfigManager("data/config.json")
 data = GenDataManager()
 
-icfg = {}
+icfg, ipricing = {}, {}
 if not devmode:
     for filename in os.listdir('./data/instances'):
         icfg[filename] = ConfigManager('data/instances'+filename+"config.json")
+        ipricing[filename] = ConfigManager('data/instances'+filename+"pricing.json")
 else:
     icfg["developer"] = ConfigManager('data/developer/config.json')
+    ipricing["developer"] = ConfigManager('data/developer/pricing.json')

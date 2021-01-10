@@ -8,6 +8,19 @@ import discord
 
 logger = get_logger("PvpSignups")
 
+request_channels, request_messages = {}, {}
+untaken_channels = {
+    "2v2": {},
+    "3v3": {}
+}
+for instname, instconfig in icfg.items():
+    request_channels[instconfig.request_channel] = {
+        "message_id": instconfig.request_message,
+        "name": instname
+    }
+    untaken_channels["2v2"][instconfig.untaken_channels["2v2"]] = instname
+    untaken_channels["3v3"][instconfig.untaken_channels["3v3"]] = instname
+
 
 class Bookings(commands.Cog):
 
@@ -18,25 +31,26 @@ class Bookings(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, reaction):
-        cond1 = False  # TODO
-        cond2 = False  # TODO
-        cond3 = False  # TODO
-        cond4 = False  # TODO
-        if cond1 and cond2 and cond3 and cond4:
-            author = commands.Bot.get_user(self.client, reaction.user_id)
-            bracket = '2v2' if reaction.emoji.name == cfg.twos_emoji else '3v3'
-            booking = Booking(bracket, author)
-            message = await Booking.request_channel.fetch_message(cfg.settings["request_booking_message_id"])
-            await message.remove_reaction(reaction.emoji, author)
-            try:
-                logger.info(f"Booking being created by {author.display_name}")
-                await booking.create()
-            except exceptions.BookingUntaken:
-                pass
+        if reaction.channel_id in request_channels.keys():
+            instance = request_channels[reaction.channel_id]
+            cond1 = reaction.message_id == instance["message_id"]
+            cond2 = reaction.emoji.name in cfg.twos_emoji, cfg.threes_emoji
+            cond3 = reaction.user_id != self.client.user.id
+            if cond1 and cond2 and cond3:
+                author = commands.Bot.get_user(self.client, reaction.user_id)
+                bracket = '2v2' if reaction.emoji.name == cfg.twos_emoji else '3v3'
+                booking = Booking(bracket, author, instance["name"])
+                message = await Booking.request_channels[instance["name"]].fetch_message(icfg[instance["name"]].request_message)
+                await message.remove_reaction(reaction.emoji, author)
+                try:
+                    logger.info(f"Booking being created by {author.display_name}")
+                    await booking.create()
+                except exceptions.BookingUntaken:
+                    pass
 
     @commands.command(description="Take an untaken boost, must be in the untaken boosts channel")
     async def take(self, ctx, booking_id, partner: discord.User = None):
-        if ctx.channel != Booking.untaken_channel["2v2"] and ctx.channel != Booking.untaken_channel["3v3"]:
+        if ctx.channel.id not in untaken_channels["2v2"].keys() or ctx.channel.id not in untaken_channels["2v2"].keys():
             return
 
         await ctx.message.delete()
@@ -62,17 +76,20 @@ class Bookings(commands.Cog):
     @commands.command()
     async def rebook(self, ctx, message_id: int):
         message = None
-        for bracket, channel in zip(["2v2", "3v3", "3v3"], [Booking.post_channel_2v2, Booking.post_channel_3v3, Booking.post_channel_glad]):
-            try:
-                message = await channel.fetch_message(message_id)
+        for iname, iconfig in Booking.post_channels.items():
+            for bracket, channel in iconfig:
+                try:
+                    message = await channel.fetch_message(message_id)
+                    break
+                except discord.NotFound:
+                    pass
+            if message:
                 break
-            except discord.NotFound:
-                pass
         if not message:
             await ctx.send(embed=base_embed("No booking message found with that ID, it was probably deleted"))
             return
         fields = message.embeds[0].fields
-        b = Booking(bracket, ctx.message.author)
+        b = Booking(bracket, ctx.message.author, iname)
         b.status = 7
         b.type = fields[1].value.replace("``", "")
         b.buyer.name, b.buyer.realm = fields[0].value[fields[0].value.find("[") + 1:fields[0].value.find("]")].split("-")
@@ -82,7 +99,7 @@ class Bookings(commands.Cog):
         b.buyer.spec, b.buyer.class_ = data.spec_from_emote(spec_emote)
         price_str = fields[2].value[fields[2].value.find("``") + 2:fields[2].value.rfind("``")].replace(",", "").replace("g", "")
         if price_str.isnumeric():
-            b.ad_price_estimate = int(price_str) / cfg.settings["booster_cut"]
+            b.ad_price_estimate = int(price_str) / icfg[iname].booster_cut
         else:
             b.ad_price_estimate = 0
         b.notes = fields[6].value[fields[6].value.find("``") + 2:fields[6].value.rfind("``")]
