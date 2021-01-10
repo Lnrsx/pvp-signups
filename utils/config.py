@@ -4,7 +4,9 @@ import os
 from socket import gethostname
 
 logger = get_logger("PvpSignups")
-devmode = False  # gethostname() == 'DESKTOP-SKJPMQE'
+
+devmode_override = True
+devmode = not devmode_override or gethostname() == 'DESKTOP-SKJPMQE'
 
 
 def load_attrs(obj, path):
@@ -59,9 +61,16 @@ data = GenDataManager()
 
 icfg, ipricing = {}, {}
 if not devmode:
-    for filename in os.listdir('./data/instances'):
+    if devmode_override:
+        logger.info("Developer mode override enabled")
+    instances = os.listdir('./data/instances')
+    if not instances:
+        logger.error("No instances detected")
+        exit()
+    for filename in instances:
         icfg[filename] = ConfigManager('data/instances/'+filename, "/config.json")
         ipricing[filename] = ConfigManager('data/instances/'+filename, "/pricing.json")
 else:
+    logger.info("! Running on developer mode !")
     icfg["pvp_bookings"] = ConfigManager('data/pvp_bookings', "/config.json")
     ipricing["pvp_bookings"] = ConfigManager('data/pvp_bookings', "/pricing.json")

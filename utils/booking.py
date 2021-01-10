@@ -102,7 +102,7 @@ class Booking(object):
                 instance = jsonpickle.decode(_instance)
                 instance.__class__.instances[instname].append(instance)
             logger.info(f"{len(cls.instances)} booking(s) have been loaded from the {instname} cache")
-            logger.info(f"----- Finished loading instance: {instname} -----")
+            logger.info(f"///// Finished loading instance: {instname} /////")
 
     @classmethod
     def get(cls, bookingid):
@@ -184,7 +184,7 @@ class Booking(object):
                     cls.untaken_messages[instname][bracket].append(new_untaken_page)
                     instconfig.untaken_messages[bracket].append(new_untaken_page.id)
                     instconfig.update()
-        logger.info(f"----- Finished updating untaken boosts for {instname} -----")
+        logger.info(f"///// Finished updating untaken boosts for {instname} /////")
 
     @classmethod
     async def cleanup(cls):
