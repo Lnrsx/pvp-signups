@@ -181,34 +181,34 @@ class Booking(object):
                             embed_title = f"\u200b\n{data.spec_emotes[b.buyer.class_][b.buyer.spec]}__**{b.buyer.spec} {b.buyer.class_} bookings**__"
                         else:
                             embed_title = "\u200b"
-                        if not (len(cls.untaken_messages[bracket]) > i and len(cls.untaken_messages[bracket][i].embeds[0].fields) > n):
+                        if not (len(cls.untaken_messages[instname][bracket]) > i and len(cls.untaken_messages[instname][bracket][i].embeds[0].fields) > n):
                             edit_required = True
-                        elif booking_string != cls.untaken_messages[bracket][i].embeds[0].fields[n].value \
-                                or embed_title != cls.untaken_messages[bracket][i].embeds[0].fields[n].name:
+                        elif booking_string != cls.untaken_messages[instname][bracket][i].embeds[0].fields[n].value \
+                                or embed_title != cls.untaken_messages[instname][bracket][i].embeds[0].fields[n].name:
                             edit_required = True
                         embed.add_field(name=embed_title, value=booking_string, inline=False)
-                    if len(cls.untaken_messages[bracket]) >= i or len(embed.fields) != len(cls.untaken_messages[bracket][i].embeds[0].fields):
+                    if len(cls.untaken_messages[instname][bracket]) >= i or len(embed.fields) != len(cls.untaken_messages[instname][bracket][i].embeds[0].fields):
                         edit_required = True
                     if not embed.fields:
                         embed.add_field(name="\u200b", value="There are currently no untaken boosts", inline=False)
                         break
-                    if len(cls.untaken_messages[bracket]) > 0 and len(cls.untaken_messages[bracket])-1 >= i:
+                    if len(cls.untaken_messages[instname][bracket]) > 0 and len(cls.untaken_messages[instname][bracket])-1 >= i:
                         if edit_required:
                             try:
-                                await cls.untaken_messages[bracket][i].edit(embed=embed)
-                                logger.info(f"Edited untaken message: {cls.untaken_messages[bracket][i].id}")
+                                await cls.untaken_messages[instname][bracket][i].edit(embed=embed)
+                                logger.info(f"Edited untaken message: {cls.untaken_messages[instname][bracket][i].id}")
                             except discord.NotFound:
                                 logger.error("Tried to edit a message that was not there")
                         else:
-                            logger.info(f"Skipping editing untaken message: {cls.untaken_messages[bracket][i].id}")
+                            logger.info(f"Skipping editing untaken message: {cls.untaken_messages[instname][bracket][i].id}")
                         embed = base_embed("")
                     else:
-                        new_untaken_page = await cls.untaken_channel[bracket].send(embed=embed)
+                        new_untaken_page = await cls.untaken_channels[instname][bracket].send(embed=embed)
                         logger.info(f"Created new untaken message {new_untaken_page.id}")
                         embed = base_embed("")
-                        cls.untaken_messages[bracket].append(new_untaken_page)
-                        cfg.settings["untaken_boosts_message_id_"+bracket].append(new_untaken_page.id)
-                        cfg.update("untaken_boosts_message_id_"+bracket)
+                        cls.untaken_messages[instname][bracket].append(new_untaken_page)
+                        icfg[instname].untaken_messages[bracket].append(new_untaken_page.id)
+                        icfg[instname].update()
 
     @classmethod
     async def cleanup(cls):
@@ -317,11 +317,11 @@ class Booking(object):
                 reactions = {"users": [str(i.id) for i in reactions if i.bot is False], "time": "schedule"}
 
                 if not reactions["users"]:
-                    untaken_message = f'No users signed up to booking ``{self.id}``, it will be moved to {self.untaken_channel[self.bracket].mention}, to claim the boost, type: ``!take {self.id}`` '
+                    untaken_message = f'No users signed up to booking ``{self.id}``, it will be moved to {self.untaken_channels[self.instance][self.bracket].mention}, to claim the boost, type: ``!take {self.id}`` '
                     await self.post_message.clear_reactions()
                     if self.bracket == "3v3":
                         untaken_message += '<Mention teammate> '
-                    untaken_message += f'in {self.untaken_channel[self.bracket].mention}'
+                    untaken_message += f'in {self.untaken_channels[self.instance][self.bracket].mention}'
                     await self.post_channel.send(embed=base_embed(untaken_message))
                     await self.author.send(embed=base_embed(f'No users signed up to booking ``{self.id}``, it will be moved to the untaken boosts board'))
                     self.status = 7
@@ -382,17 +382,16 @@ class Booking(object):
         self.status = 2
 
     def cache(self):
-        with open("data/sylvanas/bookings.json", "r") as f:
+        with open(icfg[self.instance].directory+"/bookings.json", "r") as f:
             jsondata = json.load(f)
         temp_author = self._author
         if isinstance(self._author, discord.User):
             self._author = self._author.id
-        data[str(self.id)] = jsonpickle.encode(self)
-        json.dump(jsondata, open("data/sylvanas/bookings.json", "w"), indent=4)
+        jsondata[str(self.id)] = jsonpickle.encode(self)
+        json.dump(jsondata, open(icfg[self.instance].directory+"/bookings.json", "w"), indent=4)
         self._author = temp_author
 
     def delete(self):
-        """Deletes the booking from the interal instance cache and the external file at data/sylvanas/bookings.json"""
         if self.status not in range(2):
             jsondata = json.load(open("data/sylvanas/bookings.json", "r"))
             if self.id not in jsondata.keys():
@@ -401,9 +400,9 @@ class Booking(object):
                 del jsondata[self.id]
                 with open("data/sylvanas/bookings.json", "w") as f:
                     json.dump(jsondata, f, indent=4)
-        for i, obj in enumerate(self.instances):
+        for i, obj in enumerate(self.instances[self.instance]):
             if obj.id == self.id:
-                del self.instances[i]
+                del self.instances[self.instance][i]
         logger.info(f"Booking {self.id} has been deleted")
 
     async def _get_boost_type(self, force=False):

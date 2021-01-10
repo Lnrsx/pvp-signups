@@ -21,16 +21,17 @@ def load_attrs(obj, path):
 
 
 class ConfigManager(object):
-    def __init__(self, configpath):
-        self.configpath = configpath
-        load_attrs(self, self.configpath)
+    def __init__(self, directory, subdir):
+        self.directory = directory
+        self.subdir = subdir
+        load_attrs(self, self.directory+self.subdir)
 
     def set(self, key, value):
         if key in self.__dict__.keys():
             setattr(self, key, value)
-            file = json.load(open(self.configpath, "r"))
+            file = json.load(open(self.directory+self.subdir, "r"))
             file[key] = value
-            json.dump(open(self.configpath, "w"), file, indent=4)
+            json.dump(open(self.directory+self.subdir, "w"), file, indent=4)
             return True
 
         else:
@@ -38,7 +39,7 @@ class ConfigManager(object):
             return False
 
     def update(self):
-        json.dump(self.__dict__, open(self.configpath, "w"), indent=4)
+        json.dump(self.__dict__, open(self.directory+self.subdir, "w"), indent=4)
 
 
 class GenDataManager(object):
@@ -53,14 +54,14 @@ class GenDataManager(object):
                     return spec, cls
 
 
-cfg = ConfigManager("data/config.json")
+cfg = ConfigManager("data", "/config.json")
 data = GenDataManager()
 
 icfg, ipricing = {}, {}
 if not devmode:
     for filename in os.listdir('./data/instances'):
-        icfg[filename] = ConfigManager('data/instances'+filename+"config.json")
-        ipricing[filename] = ConfigManager('data/instances'+filename+"pricing.json")
+        icfg[filename] = ConfigManager('data/instances'+filename, "/config.json")
+        ipricing[filename] = ConfigManager('data/instances'+filename, "/pricing.json")
 else:
-    icfg["developer"] = ConfigManager('data/developer/config.json')
-    ipricing["developer"] = ConfigManager('data/developer/pricing.json')
+    icfg["developer"] = ConfigManager('data/developer', "/config.json")
+    ipricing["developer"] = ConfigManager('data/developer', "/pricing.json")
