@@ -44,7 +44,7 @@ class Booking(object):
         self.price_recommendation = None
         self.ad_price_estimate = None
         self.price = 0
-        self.booster = Booster(icfg[instname])
+        self.booster = Booster(instname)
         self.notes = None
         self.post_message = None
         self.timestamp = time.time()
@@ -64,7 +64,7 @@ class Booking(object):
                 "3v3": commands.Bot.get_channel(cls.client, instconfig.post_3v3),
                 "glad": commands.Bot.get_channel(cls.client, instconfig.post_glad)
             }
-            for bracket, channel in cls.post_channels[instname].items():
+            for channel in cls.post_channels[instname].values():
                 if channel is None:
                     raise exceptions.ChannelNotFound
 
@@ -72,7 +72,7 @@ class Booking(object):
                 "2v2": commands.Bot.get_channel(cls.client, instconfig.untaken_channels["2v2"]),
                 "3v3": commands.Bot.get_channel(cls.client, instconfig.untaken_channels["3v3"])
             }
-            for bracket, channel in cls.untaken_channels[instname].items():
+            for channel in cls.untaken_channels[instname].values():
                 if channel is None:
                     raise exceptions.ChannelNotFound
 
@@ -86,6 +86,7 @@ class Booking(object):
                 await request_message.add_reaction(cfg.threes_emoji)
                 instconfig.set("request_message", request_message.id)
                 instconfig.update()
+
             cls.untaken_messages[instname] = {}
             for bracket, messages in instconfig.untaken_messages.items():
                 cls.untaken_messages[instname][bracket] = []
@@ -97,6 +98,7 @@ class Booking(object):
                         instconfig.untaken_messages[bracket].remove(message_id)
                         instconfig.update()
                         logger.info(f"disgarding unlocatable untaken boost message ID: {message_id}")
+
             cache = json.load(open(f"{instconfig.directory}/bookings.json", "r"))
             for _instance in cache.values():
                 instance = jsonpickle.decode(_instance)
@@ -591,8 +593,8 @@ class Buyer(object):
 
 
 class Booster(object):
-    def __init__(self, icfg_obj):
-        self.cfg = icfg_obj
+    def __init__(self, instname):
+        self.instname = instname
         self.prim = None
         self.sec = None
         self.prim_cut = 0
@@ -602,9 +604,9 @@ class Booster(object):
 
     def update_price(self, new_price: int):
         if not self.sec:
-            self.prim_cut = new_price // cfg.booster_cut
+            self.prim_cut = new_price // icfg[self.instname].booster_cut
         else:
-            self.prim_cut = new_price // (cfg.booster_cut / 2)
-            self.sec_cut = new_price // (cfg.booster_cut / 2)
-        self.ad_cut = new_price // cfg.advertiser_cut
-        self.mana_cut = new_price // cfg.management_cut
+            self.prim_cut = new_price // (icfg[self.instname].booster_cut / 2)
+            self.sec_cut = new_price // (icfg[self.instname].booster_cut / 2)
+        self.ad_cut = new_price // icfg[self.instname].advertiser_cut
+        self.mana_cut = new_price // icfg[self.instname].management_cut

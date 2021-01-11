@@ -6,7 +6,7 @@ from socket import gethostname
 logger = get_logger("PvpSignups")
 
 devmode_override = True
-devmode = not devmode_override or gethostname() == 'DESKTOP-SKJPMQE'
+devmode = gethostname() == 'DESKTOP-SKJPMQE' and not devmode_override
 
 
 def load_attrs(obj, path):
