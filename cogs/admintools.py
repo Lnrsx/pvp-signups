@@ -1,7 +1,7 @@
 from discord.ext import commands
 import discord
 from utils.misc import base_embed, get_logger
-from utils.config import cfg, icfg
+from utils.config import cfg
 from utils import exceptions
 from utils.booking import Booking, statuses
 from math import ceil
