@@ -1,15 +1,16 @@
-import asyncio
-
-import aiohttp
-import json
-from time import time
-from datetime import datetime
-
-import discord
-from discord.ext import commands
 from utils import exceptions
 from utils.misc import get_logger, base_embed
 from utils.config import cfg
+
+import discord
+from discord.ext import commands
+
+from time import time
+from datetime import datetime
+import asyncio
+import aiohttp
+import json
+
 
 logger = get_logger('PvpSignups')
 
@@ -80,25 +81,7 @@ class Request(object):
                 else:
                     return {'status': response.status}
 
-    @staticmethod
-    async def react_message(booking, buyerinfo, reactions='', timeout=300, custom_message=None, custom_react=None):
-        """Used to get information for the booking author in message or reaction form
-
-        Parameters
-        -----------
-        booking: :class:`Booking`
-            A booking object
-        buyerinfo: :class:`str`
-            The string the buyer will be sent, 'Please respond with' will be added to the front of the message before sending
-        reactions: :class:`list`
-            A list of the reactions that will be added to the message
-        timeout: :class:`int`
-            Time in seconds to wait for a response before raising :class:`RequestFailed` (or :class:`CancelBooking`)
-        custom_message: :class:`predicate`
-            A custom check for the message response
-        custom_react: :class:`predicate`
-            A custom check for the reaction response
-        """
+    async def react_message(self, booking, buyerinfo, reactions='', timeout=300, message_predicate=None):
         local_embed = await booking.author.send(embed=base_embed(f'Please respond with {buyerinfo}'))
 
         def reaction_check(reaction, user):
@@ -111,8 +94,8 @@ class Request(object):
             await local_embed.add_reaction(x)
 
         pending_response = [
-            commands.Bot.wait_for(booking.client, event='reaction_add', check=custom_react or reaction_check),
-            commands.Bot.wait_for(booking.client, event='message', check=custom_message or message_check)
+            commands.Bot.wait_for(booking.client, event='reaction_add', check=reaction_check),
+            commands.Bot.wait_for(booking.client, event='message', check=message_check)
         ]
         done_tasks, pending_responses = await asyncio.wait(pending_response, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
         for task in pending_responses:
@@ -122,7 +105,11 @@ class Request(object):
             response = done_tasks.pop().result()
 
             if type(response) == discord.message.Message:
-                return response.content.capitalize()
+                if not message_predicate or message_predicate(response.content.capitalize()):
+                    return response.content.capitalize()
+                else:
+                    await booking.author.send('Invalid input, please check your formatting and try again.')
+                    return await self.react_message(booking, buyerinfo, reactions=reactions, timeout=timeout, message_predicate=message_predicate)
             elif type(response[0]) == discord.reaction.Reaction and str(response[0]) != '❌':
                 return str(response[0])
         if booking.status == 0:
@@ -134,7 +121,6 @@ class Request(object):
 
     @staticmethod
     async def react(booking, reactions, description):
-        """Same function as react_message but only works with reaction, also has no timeout"""
         def check(reaction, user):
             return (str(reaction.emoji) in reactions or ['❌']) and (booking.author.id == user.id) and (reaction.message.id == embed.id)
 

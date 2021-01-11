@@ -383,24 +383,15 @@ class Booking(object):
                 del self.instances[self.instance][i]
         logger.info(f"Booking {self.id} has been deleted")
 
-    async def _get_boost_type(self, force=False):
-        if not force and self.type:
-            return
+    async def _get_boost_type(self):
+        def boost_type_check(user_input):
+            return user_input in data.boost_types or user_input in data.bracket_boost_types[self.bracket]
         fields = '\n'.join(data.boost_types + data.bracket_boost_types[self.bracket])
-        boost_type = await request.react_message(
+        self.boost_type = await request.react_message(
             self, f"the **boost type**, accepted respones:\n"
-            f" {fields}\nor react with ❌ to cancel the booking", '❌')
-        if boost_type in data.boost_types:
-            self.type = boost_type
-        elif boost_type in data.bracket_boost_types[self.bracket]:
-            self.type = boost_type
-        else:
-            await self.author.send('Boost type not recognised, please try again.')
-            await self._get_boost_type()
+            f" {fields}\nor react with ❌ to cancel the booking", '❌', message_predicate=boost_type_check)
 
-    async def _get_name_faction_class(self, force=False):
-        if not force and self.buyer.name and self.buyer.realm and self.buyer.faction and self.buyer.class_:
-            return
+    async def _get_name_faction_class(self):
         buyer_name = await request.react_message(
             self, '**buyers character name** (e.g. Mystikdruldk)'
                   '\nor react with ❌ to cancel the booking', '❌')
@@ -453,102 +444,66 @@ class Booking(object):
                 'or react with ❌ to cancel the booking')
             await self.manual_class_input()
 
-    async def manual_class_input(self, force=False):
-        if not force and self.buyer.class_:
-            return
+    async def manual_class_input(self):
+        def class_input_check(user_input):
+            return user_input in data.specs_abbreviations.keys() or user_input in data.class_abbreviations.keys()
         fields = '\n'.join(data.class_emotes)
-        buyer_class = await request.react_message(
+        self.buyer.class_ = await request.react_message(
             self, f'the **buyers class**, accepted responses:\n {fields}\n'
-            'or react with ❌ to cancel the booking', '❌')
-        if buyer_class in data.specs_abbreviations.keys():
-            self.buyer.class_ = buyer_class
-        else:
-            if buyer_class in data.class_abbreviations.keys():
-                self.buyer.class_ = data.class_abbreviations[buyer_class]
-            else:
-                await self.author.send('Class not recognised, please try again.')
-                await self.manual_class_input()
+            'or react with ❌ to cancel the booking', '❌', message_predicate=class_input_check)
+        if buyer_class in data.class_abbreviations.keys():
+            self.buyer.class_ = data.class_abbreviations[buyer_class]
 
-    async def _get_spec(self, force=False):
-        if not force and self.buyer.spec:
-            return
+    async def _get_spec(self):
         if not self.buyer.class_:
             raise exceptions.RequestFailed("Cannot get spec when class is not known")
+
+        def spec_input_check(user_input):
+            return user_input in data.spec_emotes[self.buyer.class_].keys() or user_input in list(data.specs_abbreviations[self.buyer.class_].keys())
         accepted_inputs_string = ''
         for i in data.spec_emotes[self.buyer.class_].keys():
             accepted_inputs_string += data.spec_emotes[self.buyer.class_][i] + i + '\n'
-        buyer_spec = await request.react_message(
+        self.buyer.spec = await request.react_message(
             self, f'the **buyers spec**,'
-            f' accepted respones:\n {accepted_inputs_string}', '❌')
+            f' accepted respones:\n {accepted_inputs_string}', '❌', message_predicate=spec_input_check)
+        if buyer_spec in list(data.specs_abbreviations[self.buyer.class_].keys()):
+            self.buyer.spec = data.specs_abbreviations[self.buyer.class_][buyer_spec]
 
-        if buyer_spec not in data.spec_emotes[self.buyer.class_].keys() and buyer_spec not in list(data.specs_abbreviations[self.buyer.class_].keys()):
-            await self.author.send('Spec not recognised, please try again.')
-            await self._get_spec()
-
-        else:
-            # translates spec abbreivation to proper class name if it is used
-            if buyer_spec in list(data.specs_abbreviations[self.buyer.class_].keys()):
-                buyer_spec = data.specs_abbreviations[self.buyer.class_][buyer_spec]
-
-            self.buyer.spec = buyer_spec
-
-    async def _get_rating_range(self, force=False):
-        if not force and self.buyer.rating and self.price_recommendation:
-            return
+    async def _get_rating_range(self):
         if not self.type:
             raise exceptions.RequestFailed("Cannot get rating range when boost type is not known")
-        if self.type == 'Set rating':
-            boost_rating_format_string = 'the **buyers start-desired rating**, (e.g. 1049-1800)'
 
-        else:
-            boost_rating_format_string = 'the **buyers current rating (e.g. 1687)'
-
-        boost_rating = await request.react_message(
+        def rating_format_check(user_input, booking: Booking = None):
+            return (booking.type == 'Set rating' and not [x for x in user_input.split('-') if not x.isnumeric() or int(x) not in range(0, 2401)]
+                    and len(user_input.split('-')) == 2 and int(user_input.split("-")[0]) < int(user_input.split("-")[1])) \
+                    or (booking.type != "Set rating" and user_input.isnumeric() and int(user_input) in range(0, 3501))
+        boost_rating_format_string = 'the **buyers start-desired rating**, (e.g. 1049-1800)' if self.type == 'Set rating' else 'the **buyers current rating (e.g. 1687)'
+        self.buyer.rating = await request.react_message(
             self, boost_rating_format_string
-            + '\nor react with ❌ to cancel the booking**', '❌')
+            + '\n or react with ❌ to cancel the booking**', '❌', message_predicate=rating_format_check)
+        self.buyer.rating = boost_rating
+        self.price_recommendation = pricing.set_rating(self.instance, self.bracket, start_rating, end_rating)
 
-        if self.type == 'Set rating'\
-                and not [x for x in boost_rating.split('-') if not x.isnumeric() or int(x) not in range(0, 2401)]\
-                and len(boost_rating.split('-')) == 2 and int(boost_rating.split("-")[0]) < int(boost_rating.split("-")[1]):
-            start_rating, end_rating = int(boost_rating.split("-")[0]), int(boost_rating.split("-")[1])
-            self.buyer.rating = boost_rating
+        if self.type == 'Set rating':
+            start_rating, end_rating = self.buyer.rating.split("-")
             self.price_recommendation = pricing.set_rating(self.instance, self.bracket, start_rating, end_rating)
-
-        elif self.type != "Set rating" and boost_rating.isnumeric() and int(boost_rating) in range(0, 3501):
-            if self.type == '1 win':
-                self.buyer.rating = boost_rating
-                self.price_recommendation = pricing.one_win(self.instance, self.bracket, int(boost_rating))
-
-            elif self.type == 'Gladiator':
-                self.buyer.rating = boost_rating
-                self.price_recommendation = 'See glad pricing'
-
-            else:
-                self.buyer.rating = boost_rating
-                self.price_recommendation = pricing.hourly(self.instance, self.bracket)
-
-        else:
-            await self.author.send("Rating format not recognised, please check your format and try again")
-            await self._get_rating_range()
+        elif self.type == '1 win':
+            self.price_recommendation = pricing.one_win(self.instance, self.bracket, self.buyer.rating)
+        elif self.type == 'Gladiator':
+            self.price_recommendation = 'See glad pricing'
+        elif self.type == 'Hourly':
+            self.price_recommendation = pricing.hourly(self.instance, self.bracket)
 
     async def _get_price_estimate(self):
+        def price_estimate_check(user_input):
+            user_input = user_input.replace("," "").replace(".", "")
+            return user_input.isnumeric() and int(user_input) > 0
         recommendation = f"{self.price_recommendation:,}" if self.type != "Gladiator" else "See glad pricing"
-        price_estimate = await request.react_message(
-            self, f"the **estimated price of the boost**, \n recommended price: **{recommendation}**\nThis is not the final price, just what is shown when the booking is posted", '❌')
-        price_estimate = price_estimate.replace(",", "").replace(".", "")
-        try:
-            assert price_estimate.isnumeric(), 'Boost price must be a number, please try again.'
-            assert int(price_estimate) > 0, 'Boost price cannot be negative, please try again.'
-            self.ad_price_estimate = int(price_estimate)
-            return True
+        self.ad_price_estimate = await request.react_message(
+            self, f"the **estimated price of the boost**, \n recommended price: **{recommendation}**\nThis is not the final price, just what is shown when the booking is posted",
+            '❌', message_predicate=price_estimate_check)
 
-        except AssertionError as e:
-            await self.author.send(str(e))
-            await self._get_price_estimate()
-
-    async def _get_notes(self, force=False):
-        if not force and self.notes:
-            return
+    async def _get_notes(self):
         self.notes = await request.react_message(
             self, '**any additional notes** about the buyer, react with ⏩ to skip\n'
             'or react with ❌ to cancel the booking', ['⏩', '❌'])
