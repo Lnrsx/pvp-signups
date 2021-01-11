@@ -81,7 +81,7 @@ class Request(object):
                 else:
                     return {'status': response.status}
 
-    async def react_message(self, booking, buyerinfo, reactions='', timeout=300, message_predicate=None):
+    async def react_message(self, booking, buyerinfo, reactions='', timeout=300, message_predicate=None, message_predicate_binfo=None):
         local_embed = await booking.author.send(embed=base_embed(f'Please respond with {buyerinfo}'))
 
         def reaction_check(reaction, user):
@@ -105,7 +105,7 @@ class Request(object):
             response = done_tasks.pop().result()
 
             if type(response) == discord.message.Message:
-                if not message_predicate or message_predicate(response.content.capitalize()):
+                if not message_predicate or message_predicate(response.content.capitalize()) or message_predicate_binfo(response.content.capitalize(), booking):
                     return response.content.capitalize()
                 else:
                     await booking.author.send('Invalid input, please check your formatting and try again.')

@@ -387,7 +387,7 @@ class Booking(object):
         def boost_type_check(user_input):
             return user_input in data.boost_types or user_input in data.bracket_boost_types[self.bracket]
         fields = '\n'.join(data.boost_types + data.bracket_boost_types[self.bracket])
-        self.boost_type = await request.react_message(
+        self.type = await request.react_message(
             self, f"the **boost type**, accepted respones:\n"
             f" {fields}\nor react with ❌ to cancel the booking", '❌', message_predicate=boost_type_check)
 
@@ -466,28 +466,27 @@ class Booking(object):
         self.buyer.spec = await request.react_message(
             self, f'the **buyers spec**,'
             f' accepted respones:\n {accepted_inputs_string}', '❌', message_predicate=spec_input_check)
-        if buyer_spec in list(data.specs_abbreviations[self.buyer.class_].keys()):
+        if self.buyer.spec in list(data.specs_abbreviations[self.buyer.class_].keys()):
             self.buyer.spec = data.specs_abbreviations[self.buyer.class_][buyer_spec]
 
     async def _get_rating_range(self):
         if not self.type:
             raise exceptions.RequestFailed("Cannot get rating range when boost type is not known")
 
-        def rating_format_check(user_input, booking: Booking = None):
+        def rating_format_check(user_input, booking):
             return (booking.type == 'Set rating' and not [x for x in user_input.split('-') if not x.isnumeric() or int(x) not in range(0, 2401)]
                     and len(user_input.split('-')) == 2 and int(user_input.split("-")[0]) < int(user_input.split("-")[1])) \
                     or (booking.type != "Set rating" and user_input.isnumeric() and int(user_input) in range(0, 3501))
         boost_rating_format_string = 'the **buyers start-desired rating**, (e.g. 1049-1800)' if self.type == 'Set rating' else 'the **buyers current rating (e.g. 1687)'
         self.buyer.rating = await request.react_message(
             self, boost_rating_format_string
-            + '\n or react with ❌ to cancel the booking**', '❌', message_predicate=rating_format_check)
-        self.buyer.rating = boost_rating
-        self.price_recommendation = pricing.set_rating(self.instance, self.bracket, start_rating, end_rating)
+            + '\n or react with ❌ to cancel the booking**', '❌', message_predicate_binfo=rating_format_check)
 
         if self.type == 'Set rating':
-            start_rating, end_rating = self.buyer.rating.split("-")
+            start_rating, end_rating = [int(i) for i in self.buyer.rating.split("-")]
             self.price_recommendation = pricing.set_rating(self.instance, self.bracket, start_rating, end_rating)
         elif self.type == '1 win':
+            self.buyer.rating = int(self.buyer.rating)
             self.price_recommendation = pricing.one_win(self.instance, self.bracket, self.buyer.rating)
         elif self.type == 'Gladiator':
             self.price_recommendation = 'See glad pricing'
@@ -496,12 +495,13 @@ class Booking(object):
 
     async def _get_price_estimate(self):
         def price_estimate_check(user_input):
-            user_input = user_input.replace("," "").replace(".", "")
+            user_input = user_input.replace(",", "").replace(".", "")
             return user_input.isnumeric() and int(user_input) > 0
         recommendation = f"{self.price_recommendation:,}" if self.type != "Gladiator" else "See glad pricing"
         self.ad_price_estimate = await request.react_message(
             self, f"the **estimated price of the boost**, \n recommended price: **{recommendation}**\nThis is not the final price, just what is shown when the booking is posted",
             '❌', message_predicate=price_estimate_check)
+        self.ad_price_estimate = int(self.ad_price_estimate.replace(",", "").replace(".", ""))
 
     async def _get_notes(self):
         self.notes = await request.react_message(
