@@ -1,31 +1,15 @@
-2021-01-11 16:36:44,144:INFO:PvpSignups: Developer mode override enabled
-2021-01-11 16:36:46,913:INFO:PvpSignups: ----- Begin loading instance pvp_bookings: -----
-2021-01-11 16:36:47,082:INFO:PvpSignups: Successfully located request message
-2021-01-11 16:36:47,214:INFO:PvpSignups: Located untaken boost message ID: 797856454824296488
-2021-01-11 16:36:47,215:INFO:PvpSignups: 2 booking(s) have been loaded from the pvp_bookings cache
-2021-01-11 16:36:47,215:INFO:PvpSignups: ///// Finished loading instance: pvp_bookings /////
-2021-01-11 16:36:47,215:INFO:PvpSignups: ----- Begin loading instance pvp_bookings_2: -----
-2021-01-11 16:36:47,376:INFO:PvpSignups: Successfully located request message
-2021-01-11 16:36:47,515:INFO:PvpSignups: Located untaken boost message ID: 797856234682187786
-2021-01-11 16:36:47,516:INFO:PvpSignups: 2 booking(s) have been loaded from the pvp_bookings_2 cache
-2021-01-11 16:36:47,516:INFO:PvpSignups: ///// Finished loading instance: pvp_bookings_2 /////
-2021-01-11 16:36:47,516:INFO:PvpSignups: ----- Begin updating untaken boosts for pvp_bookings -----
-2021-01-11 16:36:47,685:INFO:PvpSignups: Edited untaken message: 797856454824296488
-2021-01-11 16:36:47,685:INFO:PvpSignups: ///// Finished updating untaken boosts for pvp_bookings /////
-2021-01-11 16:36:47,686:INFO:PvpSignups: ----- Begin updating untaken boosts for pvp_bookings_2 -----
-2021-01-11 16:36:47,884:INFO:PvpSignups: Edited untaken message: 797856234682187786
-2021-01-11 16:36:47,884:INFO:PvpSignups: ///// Finished updating untaken boosts for pvp_bookings_2 /////
-2021-01-11 16:36:47,884:INFO:PvpSignups: Bot is ready
-2021-01-11 16:36:47,884:INFO:PvpSignups: Beginning booking cleanup...
-2021-01-11 16:36:47,885:INFO:PvpSignups: ----- Begin updating untaken boosts for pvp_bookings -----
-2021-01-11 16:36:48,047:INFO:PvpSignups: Edited untaken message: 797856454824296488
-2021-01-11 16:36:48,047:INFO:PvpSignups: ///// Finished updating untaken boosts for pvp_bookings /////
-2021-01-11 16:36:48,048:INFO:PvpSignups: ----- Begin updating untaken boosts for pvp_bookings_2 -----
-2021-01-11 16:36:48,315:INFO:PvpSignups: Edited untaken message: 797856234682187786
-2021-01-11 16:36:48,315:INFO:PvpSignups: ///// Finished updating untaken boosts for pvp_bookings_2 /////
-2021-01-11 16:36:48,316:INFO:PvpSignups: Finished booking cleanup
-2021-01-11 16:36:49,398:INFO:PvpSignups: Booking being created by Lunarus for pvp_bookings_2
-2021-01-11 16:36:58,238:INFO:PvpSignups: Posting 2v2 booking: 6853163122
-2021-01-11 16:37:05,744:INFO:PvpSignups: ----- Begin updating untaken boosts for pvp_bookings_2 -----
-2021-01-11 16:37:05,925:INFO:PvpSignups: Edited untaken message: 797856234682187786
-2021-01-11 16:37:05,925:INFO:PvpSignups: ///// Finished updating untaken boosts for pvp_bookings_2 /////
+2021-01-27 16:22:36,256: PvpSignups INFO: ! Running on developer mode !
+2021-01-27 16:22:39,055: PvpSignups INFO: ----- Begin loading instance developer: -----
+2021-01-27 16:22:39,315: PvpSignups INFO: Successfully located request message
+2021-01-27 16:22:39,316: PvpSignups INFO: 2 booking(s) have been loaded from the developer cache
+2021-01-27 16:22:39,316: PvpSignups INFO: ----- Finished loading instance: developer -----
+2021-01-27 16:22:39,316: PvpSignups INFO: ----- Begin updating untaken boosts for developer -----
+2021-01-27 16:22:39,588: PvpSignups INFO: Created new untaken message 804023579146452995
+2021-01-27 16:22:39,589: PvpSignups INFO: ----- Finished updating untaken boosts for developer -----
+2021-01-27 16:22:39,589: PvpSignups INFO: Beginning booking cleanup...
+2021-01-27 16:22:39,590: PvpSignups INFO: Booking 9097477282 has been deleted
+2021-01-27 16:22:39,590: PvpSignups INFO: ----- Begin updating untaken boosts for developer -----
+2021-01-27 16:22:39,811: PvpSignups INFO: Edited untaken message: 804023579146452995
+2021-01-27 16:22:39,811: PvpSignups INFO: ----- Finished updating untaken boosts for developer -----
+2021-01-27 16:22:39,811: PvpSignups INFO: Finished booking cleanup
+2021-01-27 16:22:39,812: PvpSignups INFO: Bot is ready

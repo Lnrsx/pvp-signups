@@ -1,7 +1,7 @@
 from discord.ext import commands
 import discord
 from utils.misc import base_embed, get_logger
-from utils.config import cfg
+from utils.config import icfg
 from utils import exceptions
 from utils.booking import Booking, statuses
 from math import ceil
@@ -87,7 +87,7 @@ class AdminTools(commands.Cog):
     async def deletebooking(self, ctx, booking_id):
         booking = Booking.get(booking_id)
         instname = booking.instance
-        if ctx.message.author.id in cfg.settings["managers"] or ctx.message.author.id == booking.author.id:
+        if ctx.message.author.id in icfg[booking.instance].managers or ctx.message.author.id == booking.author.id:
             booking.delete()
             await ctx.message.author.send(embed=base_embed(f"Booking ``{booking_id}`` has been deleted, if it is on the untaken boosts board, it will be updated in a second"))
             await ctx.message.delete()

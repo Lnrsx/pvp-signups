@@ -103,12 +103,12 @@ class Booking(object):
             for _instance in cache.values():
                 instance = jsonpickle.decode(_instance)
                 instance.__class__.instances[instname].append(instance)
-            logger.info(f"{len(cls.instances)} booking(s) have been loaded from the {instname} cache")
+            logger.info(f"{len(cls.instances[instname])} booking(s) have been loaded from the {instname} cache")
             logger.info(f"----- Finished loading instance: {instname} -----")
 
     @classmethod
     def get(cls, bookingid):
-        for instance in cls.joined_instances:
+        for instance in cls.joined_instances():
             if instance.id == bookingid:
                 return instance
         raise exceptions.RequestFailed(f"No booking was found with ID ``{bookingid}``")
@@ -192,20 +192,31 @@ class Booking(object):
     async def cleanup(cls):
         logger.info("Beginning booking cleanup...")
         ts = time.time()
-        expired = []
         for instname, insts in cls.instances.items():
             for i, b in enumerate(insts):
                 if (b.timestamp + 172800) < ts:  # 2 days in seconds
-                    if isinstance(b.post_message, int):
-                        await b.author.send(
-                            embed=base_embed(f"Your booking with ID ``{b.id}`` for ``{b.buyer.name}-{b.buyer.realm} "
-                                             f""f"{b.bracket} {b.type} {b.buyer.rating}`` has expired from the expired bookings board, "
-                                             f"if the buyer still wants a boost, **DM me** ``!rebook {b.post_message}``"))
-                    expired.append(b)
-        # no idea why but it needs to be like this or it only cleans first 2 expired
-            [b.delete() for b in expired]
+                    b.delete()
+            # no idea why but it needs to be like this or it only cleans first 2 expired
             await Booking.update_untaken_boosts(instname)
         logger.info("Finished booking cleanup")
+
+    @classmethod
+    def joined_instances(cls):
+        return list(itertools.chain.from_iterable(cls.instances.values()))
+
+    @classmethod
+    def json_instances(cls):
+        json_instances = {}
+        for b in cls.joined_instances():
+            instance = b.__dict__
+            if isinstance(instance["buyer"], Buyer):
+                instance["buyer"] = instance["buyer"].__dict__
+            if isinstance(instance["booster"], Booster):
+                instance["booster"] = instance["booster"].__dict__
+            if isinstance(instance["post_message"], discord.Message):
+                instance["post_message"] = instance["post_message"].id
+            json_instances[instance["id"]] = instance
+        return json.dumps(json_instances)
 
     @property
     def author(self) -> discord.User:
@@ -233,10 +244,6 @@ class Booking(object):
                 return self.post_channels[self.instance]["glad"]
             else:
                 return self.post_channels[self.instance]["3v3"]
-
-    @property
-    def joined_instances(self):
-        return list(itertools.chain.from_iterable(self.instances.values()))
 
     async def create(self):
         try:
@@ -308,7 +315,7 @@ class Booking(object):
                     await self.update_untaken_boosts(self.instance)
                     raise exceptions.BookingUntaken
             await self.post_message.clear_reactions()
-            weight_file = json.load(open(f'data/sylvanas/userweights.json', 'r'))
+            weight_file = json.load(open(f'{icfg[self.instance].directory}/userweights.json', 'r'))
             user_weights = weight_file[self.bracket]
             for user in [x for x in reactions["users"] if x not in user_weights.keys()]:
                 user_weights[str(user)] = 1
@@ -356,7 +363,7 @@ class Booking(object):
                 else:
                     user_weights[key] = round(user_weights[key] + (self.booster.prim_cut * cfg.bad_luck_protection_mofifier), 5)
         weight_file[self.bracket] = user_weights
-        json.dump(weight_file, open(f'data/sylvanas/userweights.json', 'w'), indent=4)
+        json.dump(weight_file, open(f'{icfg[self.instance].directory}/userweights.json', 'w'), indent=4)
         self.status = 2
 
     def cache(self):
@@ -371,12 +378,12 @@ class Booking(object):
 
     def delete(self):
         if self.status not in range(2):
-            jsondata = json.load(open("data/sylvanas/bookings.json", "r"))
+            jsondata = json.load(open(f"{icfg[self.instance].directory}/bookings.json", "r"))
             if self.id not in jsondata.keys():
                 logger.warning("Tried to delete bookings not in cache")
             else:
                 del jsondata[self.id]
-                with open("data/sylvanas/bookings.json", "w") as f:
+                with open(icfg[self.instance].directory+"/bookings.json", "w") as f:
                     json.dump(jsondata, f, indent=4)
         for i, obj in enumerate(self.instances[self.instance]):
             if obj.id == self.id:
@@ -418,7 +425,7 @@ class Booking(object):
 
                 if str(character_not_found_response) == cfg.choose_faction_emoji:
                     faction_response = await request.react(
-                        self, [cfghorde_emoji, cfg.alliance_emoji],
+                        self, [cfg.horde_emoji, cfg.alliance_emoji],
                         'React with the **buyers faction**\n'
                         'or react with ❌ to cancel the booking')
                     self.buyer.faction = faction_response.name
@@ -433,7 +440,7 @@ class Booking(object):
                     " you can either input the buyers faction and class manually "
                     f"{cfg.choose_faction_emoji}, or cancel the booking (❌)."))
                 self.buyer.faction = await request.react(
-                    self, [cfghorde_emoji, cfg.alliance_emoji],
+                    self, [cfg.horde_emoji, cfg.alliance_emoji],
                     'React with the **buyers faction**\n'
                     'or react with ❌ to cancel the booking')
                 await self.manual_class_input()

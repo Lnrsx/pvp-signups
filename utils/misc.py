@@ -13,7 +13,7 @@ def base_embed(description, title=''):
 def get_logger(name):
     _logger = logging.getLogger(name)
     if not _logger.handlers:
-        formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s')
+        formatter = logging.Formatter('%(asctime)s: %(name)s %(levelname)s: %(message)s')
         _logger.setLevel(logging.INFO)
 
         file_handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')

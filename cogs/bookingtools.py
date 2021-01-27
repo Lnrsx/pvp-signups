@@ -1,10 +1,10 @@
-from discord.ext import commands
 from utils.booking import Booking
 from utils import exceptions
 from utils.config import cfg, icfg, data
 from utils.misc import base_embed, get_logger
 
 import discord
+from discord.ext import commands
 
 logger = get_logger("PvpSignups")
 
@@ -50,7 +50,7 @@ class Bookings(commands.Cog):
 
     @commands.command(description="Take an untaken boost, must be in the untaken boosts channel")
     async def take(self, ctx, booking_id, partner: discord.User = None):
-        if ctx.channel.id not in self.untaken_channels["2v2"].keys() or ctx.channel.id not in self.untaken_channels["2v2"].keys():
+        if ctx.channel.id not in self.untaken_channels["2v2"].keys() and ctx.channel.id not in self.untaken_channels["3v3"].keys():
             return
 
         await ctx.message.delete()
@@ -67,9 +67,9 @@ class Bookings(commands.Cog):
                 return
         await booking.author.send(embed=base_embed(f"You booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm} {booking.bracket} {booking.type} {booking.buyer.rating}``"
                                                    f"\n has been claimed by {ctx.message.author.display_name}"))
-        await ctx.message.author.send(embed=base_embed(f"You have claimed booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm}`` ``{booking.bracket} {booking.type} {booking.buyer.rating}\n"
-                                                       f"**Message {booking.author.mention} before you start, as they will most likely have to collect the gold**``"))
-        logger.info(f"Booking {booking.id} has been claimed by {booking.booster.prim.display_name}")
+        await ctx.message.author.send(embed=base_embed(f"You have claimed booking with ID ``{booking.id}`` for ``{booking.buyer.name}-{booking.buyer.realm}`` ``{booking.bracket} {booking.type} {booking.buyer.rating}``\n"
+                                                       f"**Message {booking.author.mention} before you start, as they will most likely have to collect the gold**"))
+        logger.info(f"Booking {booking.id} has been claimed by {booking.booster.prim}")
         booking.status = 3
         await Booking.update_untaken_boosts(booking.instance)
 

@@ -36,6 +36,7 @@ class PvpSignups(commands.Bot):
         try:
             await Booking.load(self)
             for instname in icfg.keys():
+                pass
                 await Booking.update_untaken_boosts(instname)
             if cfg.auto_faction_class_input:
                 await request.token('wowapi')
@@ -49,8 +50,8 @@ class PvpSignups(commands.Bot):
         except exceptions.InvalidTokenResponse:
             cfg.set("auto_faction_class_input", False)
             logger.warning("Bot could not get a blizzard API access token, automatic faction/class input has been disabled")
+        await Booking.cleanup()
         logger.info("Bot is ready")
-        self.cleanup.start()
 
     def startup(self):
         """Performs the necessary checks on file integrity and loads cogs, must be called or the bot will not have any commands"""
@@ -69,10 +70,6 @@ class PvpSignups(commands.Bot):
                 booking.cache()
         logger.info("All bookings have been cached, shutting down")
         exit()
-
-    @tasks.loop(hours=1)
-    async def cleanup(self):
-        await Booking.cleanup()
 
     async def on_command_error(self, ctx, error):
         if hasattr(ctx.command, 'on_error'):
@@ -108,6 +105,10 @@ class PvpSignups(commands.Bot):
                 continue
             command_string += '> '
         return f"**{command_string}**"
+
+    @tasks.loop(hours=1)
+    async def cleanup(self):
+        await Booking.cleanup()
 
 
 def main():

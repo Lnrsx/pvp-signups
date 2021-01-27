@@ -5,7 +5,7 @@ from socket import gethostname
 
 logger = get_logger("PvpSignups")
 
-devmode_override = True
+devmode_override = False
 devmode = gethostname() == 'DESKTOP-SKJPMQE' and not devmode_override
 
 
@@ -72,5 +72,5 @@ if not devmode:
         ipricing[filename] = ConfigManager('data/instances/'+filename, "/pricing.json")
 else:
     logger.info("! Running on developer mode !")
-    icfg["pvp_bookings"] = ConfigManager('data/pvp_bookings', "/config.json")
-    ipricing["pvp_bookings"] = ConfigManager('data/pvp_bookings', "/pricing.json")
+    icfg["developer"] = ConfigManager('data/developer', "/config.json")
+    ipricing["developer"] = ConfigManager('data/developer', "/pricing.json")

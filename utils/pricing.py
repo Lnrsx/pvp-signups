@@ -6,16 +6,17 @@ def set_rating(instname, bracket, current_rating, end_rating):
     price = 0
     _pricing = ipricing[instname].set_rating[bracket]
     brackets = ipricing[instname].brackets
-    # while the current rating is below the end rating's pricing bracket, jumps to the next bracket and adds the price of that rating
-    while bisect(brackets, current_rating) < bisect(brackets, end_rating):
-        # adds the difference between current rating to the end of the bracket * pricing of the bracket
-        price += (brackets[bisect(brackets, current_rating)] - current_rating) * _pricing[bisect(brackets, current_rating) - 1]
-        # updates the rating accordingly
+    end_rating_bracket = bisect(brackets, end_rating)
+
+    while bisect(brackets, current_rating) < end_rating_bracket:
+        rating_to_next_bracket = brackets[bisect(brackets, current_rating)] - current_rating
+        current_bracket_price = _pricing[bisect(brackets, current_rating) - 1]
+        price += rating_to_next_bracket * current_bracket_price
         current_rating = brackets[bisect(brackets, current_rating)]
 
-    # when the current rating is in the same pricing bracket as the end rating, adds the product of the difference and pricing of the bracket
     if bisect(brackets, current_rating) == bisect(brackets, end_rating):
-        price += (end_rating - current_rating) * _pricing[bisect(brackets, current_rating) - 1]
+        current_bracket_price = _pricing[bisect(brackets, current_rating) - 1]
+        price += (end_rating - current_rating) * current_bracket_price
 
     return price
 
