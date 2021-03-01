@@ -1,6 +1,5 @@
 venv/*
 .idea/*
-data/dawn/config.json
-data/sylvanas/config.json
+data/config.json
 data/token.json
 discord.log
